@@ -1,0 +1,4 @@
+(executable
+ (name cmdliner_demo)
+ (libraries core cmdliner)
+ (preprocess (pps ppx_jane)))
