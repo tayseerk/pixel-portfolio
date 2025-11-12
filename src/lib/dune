@@ -1,0 +1,6 @@
+(library
+ (name pixel_portfolio_lib)
+ (public_name pixel-portfolio.lib)
+ (libraries core owl yojson)
+ (preprocess (pps ppx_jane))
+ (modules ))
