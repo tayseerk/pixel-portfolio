@@ -1,0 +1,5 @@
+(executable
+ (name main)
+ (public_name pixel_portfolio)
+ (libraries core cmdliner pixel_portfolio_lib)
+ (preprocess (pps ppx_jane)))
