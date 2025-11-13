@@ -1,0 +1,33 @@
+# Create .gitignore in project root
+cat > .gitignore << 'EOF'
+# Build artifacts
+_build/
+*.exe
+*.o
+*.cmi
+*.cmo
+*.cmx
+*.cma
+*.cmxa
+*.a
+
+# opam
+_opam/
+
+# Editor files
+.vscode/
+.idea/
+*.swp
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Merlin
+.merlin
+
+# Coverage
+_coverage/
+bisect*.coverage
+EOF
