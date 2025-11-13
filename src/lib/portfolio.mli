@@ -1,6 +1,6 @@
 (** The portfolio management for pixel-portfolio
     This module will track the player's cash, holdings, equity,
-    and the level the player is in*)
+    and the level of the player*)
 
 open Core
 
