@@ -3,11 +3,26 @@ Repository for FPSE Final Project, Group Members: Tayseer Karrossi, Byron S. Mit
 
 Current libraries:
   - Owl (works on both pcs)
-  - Yojson `(we might not need this bc bisect_ppx has S-expression but we will see - from TA)
+  - Yojson (we might not need this bc bisect_ppx has S-expression but we will see - from TA)
   - Sexplib
   - Bisect_ppx
-  - Cmdliner
+  - Cmdliner (works on both pcs)
   - ppx_jane
+
+  command examples: 
+dune exec pixel_portfolio -- buy AAPL --qty 10
+dune exec pixel_portfolio -- buy TSLA --qty 5 --price 200.50
+dune exec pixel_portfolio -- buy GOOGL --qty 1 --price 120.00
+dune exec pixel_portfolio -- sell AAPL --qty 3
+dune exec pixel_portfolio -- sell MSFT --qty 2 --price 350.00
+dune exec pixel_portfolio -- portfolio
+dune exec pixel_portfolio -- tick
+dune exec pixel_portfolio -- simulate --steps 10
+dune exec pixel_portfolio -- simulate --steps 25
+dune exec pixel_portfolio -- save --file game.sexp
+dune exec pixel_portfolio -- load --file game.sexp
+
+plan for completion:
 
   By November 16th - make sure .mli files are good and no more major design changes will occur (after TA feedback)
 
