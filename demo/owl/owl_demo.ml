@@ -1,4 +1,4 @@
-open Core;
+open Core
 
 (* Demo of Owl library for random number generation *)
 
