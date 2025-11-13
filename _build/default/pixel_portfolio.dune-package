@@ -1,0 +1,169 @@
+(lang dune 3.20)
+(name pixel_portfolio)
+(sections (lib .) (libexec .) (bin ../../bin) (doc ../../doc/pixel_portfolio))
+(files
+ (lib
+  (META
+   dune-package
+   lib/engine.ml
+   lib/engine.mli
+   lib/gbm.ml
+   lib/gbm.mli
+   lib/model.ml
+   lib/model.mli
+   lib/money.ml
+   lib/money.mli
+   lib/order.ml
+   lib/order.mli
+   lib/ou.ml
+   lib/ou.mli
+   lib/pixel_portfolio_lib.a
+   lib/pixel_portfolio_lib.cma
+   lib/pixel_portfolio_lib.cmi
+   lib/pixel_portfolio_lib.cmt
+   lib/pixel_portfolio_lib.cmx
+   lib/pixel_portfolio_lib.cmxa
+   lib/pixel_portfolio_lib.ml
+   lib/pixel_portfolio_lib__Engine.cmi
+   lib/pixel_portfolio_lib__Engine.cmt
+   lib/pixel_portfolio_lib__Engine.cmti
+   lib/pixel_portfolio_lib__Engine.cmx
+   lib/pixel_portfolio_lib__Gbm.cmi
+   lib/pixel_portfolio_lib__Gbm.cmt
+   lib/pixel_portfolio_lib__Gbm.cmti
+   lib/pixel_portfolio_lib__Gbm.cmx
+   lib/pixel_portfolio_lib__Model.cmi
+   lib/pixel_portfolio_lib__Model.cmt
+   lib/pixel_portfolio_lib__Model.cmti
+   lib/pixel_portfolio_lib__Model.cmx
+   lib/pixel_portfolio_lib__Money.cmi
+   lib/pixel_portfolio_lib__Money.cmt
+   lib/pixel_portfolio_lib__Money.cmti
+   lib/pixel_portfolio_lib__Money.cmx
+   lib/pixel_portfolio_lib__Order.cmi
+   lib/pixel_portfolio_lib__Order.cmt
+   lib/pixel_portfolio_lib__Order.cmti
+   lib/pixel_portfolio_lib__Order.cmx
+   lib/pixel_portfolio_lib__Ou.cmi
+   lib/pixel_portfolio_lib__Ou.cmt
+   lib/pixel_portfolio_lib__Ou.cmti
+   lib/pixel_portfolio_lib__Ou.cmx
+   lib/pixel_portfolio_lib__Portfolio.cmi
+   lib/pixel_portfolio_lib__Portfolio.cmt
+   lib/pixel_portfolio_lib__Portfolio.cmti
+   lib/pixel_portfolio_lib__Portfolio.cmx
+   lib/pixel_portfolio_lib__Save_game_state.cmi
+   lib/pixel_portfolio_lib__Save_game_state.cmt
+   lib/pixel_portfolio_lib__Save_game_state.cmti
+   lib/pixel_portfolio_lib__Save_game_state.cmx
+   lib/portfolio.ml
+   lib/portfolio.mli
+   lib/save_game_state.ml
+   lib/save_game_state.mli
+   opam))
+ (libexec (lib/pixel_portfolio_lib.cmxs))
+ (bin (pixel_portfolio))
+ (doc (README.md)))
+(library
+ (name pixel_portfolio.lib)
+ (kind normal)
+ (archives
+  (byte lib/pixel_portfolio_lib.cma)
+  (native lib/pixel_portfolio_lib.cmxa))
+ (plugins
+  (byte lib/pixel_portfolio_lib.cma)
+  (native lib/pixel_portfolio_lib.cmxs))
+ (native_archives lib/pixel_portfolio_lib.a)
+ (requires
+  core
+  owl
+  yojson
+  ppx_sexp_conv.runtime-lib
+  sexplib0
+  ppx_compare.runtime-lib
+  ppx_enumerate.runtime-lib
+  ppx_hash.runtime-lib
+  ppx_here.runtime-lib
+  ppx_assert.runtime-lib
+  ppx_bench.runtime-lib
+  bin_prot
+  fieldslib
+  ppx_inline_test.config
+  ppx_inline_test.runtime-lib
+  ppx_module_timer.runtime
+  ppx_stable_witness.runtime
+  ppx_string.runtime
+  base
+  typerep
+  variantslib
+  ppx_expect.runtime
+  ppx_expect.config
+  ppx_log.types
+  ppx_log.syntax
+  base_quickcheck.ppx_quickcheck.runtime
+  base_quickcheck)
+ (main_module_name Pixel_portfolio_lib)
+ (modes byte native)
+ (modules
+  (wrapped
+   (group
+    (alias
+     (obj_name pixel_portfolio_lib)
+     (visibility public)
+     (kind alias)
+     (source
+      (path Pixel_portfolio_lib)
+      (impl (path lib/pixel_portfolio_lib.ml-gen))))
+    (name Pixel_portfolio_lib)
+    (modules
+     (module
+      (obj_name pixel_portfolio_lib__Engine)
+      (visibility public)
+      (source
+       (path Engine)
+       (intf (path lib/engine.mli))
+       (impl (path lib/engine.ml))))
+     (module
+      (obj_name pixel_portfolio_lib__Gbm)
+      (visibility public)
+      (source (path Gbm) (intf (path lib/gbm.mli)) (impl (path lib/gbm.ml))))
+     (module
+      (obj_name pixel_portfolio_lib__Model)
+      (visibility public)
+      (source
+       (path Model)
+       (intf (path lib/model.mli))
+       (impl (path lib/model.ml))))
+     (module
+      (obj_name pixel_portfolio_lib__Money)
+      (visibility public)
+      (source
+       (path Money)
+       (intf (path lib/money.mli))
+       (impl (path lib/money.ml))))
+     (module
+      (obj_name pixel_portfolio_lib__Order)
+      (visibility public)
+      (source
+       (path Order)
+       (intf (path lib/order.mli))
+       (impl (path lib/order.ml))))
+     (module
+      (obj_name pixel_portfolio_lib__Ou)
+      (visibility public)
+      (source (path Ou) (intf (path lib/ou.mli)) (impl (path lib/ou.ml))))
+     (module
+      (obj_name pixel_portfolio_lib__Portfolio)
+      (visibility public)
+      (source
+       (path Portfolio)
+       (intf (path lib/portfolio.mli))
+       (impl (path lib/portfolio.ml))))
+     (module
+      (obj_name pixel_portfolio_lib__Save_game_state)
+      (visibility public)
+      (source
+       (path Save_game_state)
+       (intf (path lib/save_game_state.mli))
+       (impl (path lib/save_game_state.ml))))))
+   (wrapped true))))

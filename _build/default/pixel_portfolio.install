@@ -1,0 +1,69 @@
+lib: [
+  "_build/install/default/lib/pixel_portfolio/META"
+  "_build/install/default/lib/pixel_portfolio/dune-package"
+  "_build/install/default/lib/pixel_portfolio/lib/engine.ml" {"lib/engine.ml"}
+  "_build/install/default/lib/pixel_portfolio/lib/engine.mli" {"lib/engine.mli"}
+  "_build/install/default/lib/pixel_portfolio/lib/gbm.ml" {"lib/gbm.ml"}
+  "_build/install/default/lib/pixel_portfolio/lib/gbm.mli" {"lib/gbm.mli"}
+  "_build/install/default/lib/pixel_portfolio/lib/model.ml" {"lib/model.ml"}
+  "_build/install/default/lib/pixel_portfolio/lib/model.mli" {"lib/model.mli"}
+  "_build/install/default/lib/pixel_portfolio/lib/money.ml" {"lib/money.ml"}
+  "_build/install/default/lib/pixel_portfolio/lib/money.mli" {"lib/money.mli"}
+  "_build/install/default/lib/pixel_portfolio/lib/order.ml" {"lib/order.ml"}
+  "_build/install/default/lib/pixel_portfolio/lib/order.mli" {"lib/order.mli"}
+  "_build/install/default/lib/pixel_portfolio/lib/ou.ml" {"lib/ou.ml"}
+  "_build/install/default/lib/pixel_portfolio/lib/ou.mli" {"lib/ou.mli"}
+  "_build/install/default/lib/pixel_portfolio/lib/pixel_portfolio_lib.a" {"lib/pixel_portfolio_lib.a"}
+  "_build/install/default/lib/pixel_portfolio/lib/pixel_portfolio_lib.cma" {"lib/pixel_portfolio_lib.cma"}
+  "_build/install/default/lib/pixel_portfolio/lib/pixel_portfolio_lib.cmi" {"lib/pixel_portfolio_lib.cmi"}
+  "_build/install/default/lib/pixel_portfolio/lib/pixel_portfolio_lib.cmt" {"lib/pixel_portfolio_lib.cmt"}
+  "_build/install/default/lib/pixel_portfolio/lib/pixel_portfolio_lib.cmx" {"lib/pixel_portfolio_lib.cmx"}
+  "_build/install/default/lib/pixel_portfolio/lib/pixel_portfolio_lib.cmxa" {"lib/pixel_portfolio_lib.cmxa"}
+  "_build/install/default/lib/pixel_portfolio/lib/pixel_portfolio_lib.ml" {"lib/pixel_portfolio_lib.ml"}
+  "_build/install/default/lib/pixel_portfolio/lib/pixel_portfolio_lib__Engine.cmi" {"lib/pixel_portfolio_lib__Engine.cmi"}
+  "_build/install/default/lib/pixel_portfolio/lib/pixel_portfolio_lib__Engine.cmt" {"lib/pixel_portfolio_lib__Engine.cmt"}
+  "_build/install/default/lib/pixel_portfolio/lib/pixel_portfolio_lib__Engine.cmti" {"lib/pixel_portfolio_lib__Engine.cmti"}
+  "_build/install/default/lib/pixel_portfolio/lib/pixel_portfolio_lib__Engine.cmx" {"lib/pixel_portfolio_lib__Engine.cmx"}
+  "_build/install/default/lib/pixel_portfolio/lib/pixel_portfolio_lib__Gbm.cmi" {"lib/pixel_portfolio_lib__Gbm.cmi"}
+  "_build/install/default/lib/pixel_portfolio/lib/pixel_portfolio_lib__Gbm.cmt" {"lib/pixel_portfolio_lib__Gbm.cmt"}
+  "_build/install/default/lib/pixel_portfolio/lib/pixel_portfolio_lib__Gbm.cmti" {"lib/pixel_portfolio_lib__Gbm.cmti"}
+  "_build/install/default/lib/pixel_portfolio/lib/pixel_portfolio_lib__Gbm.cmx" {"lib/pixel_portfolio_lib__Gbm.cmx"}
+  "_build/install/default/lib/pixel_portfolio/lib/pixel_portfolio_lib__Model.cmi" {"lib/pixel_portfolio_lib__Model.cmi"}
+  "_build/install/default/lib/pixel_portfolio/lib/pixel_portfolio_lib__Model.cmt" {"lib/pixel_portfolio_lib__Model.cmt"}
+  "_build/install/default/lib/pixel_portfolio/lib/pixel_portfolio_lib__Model.cmti" {"lib/pixel_portfolio_lib__Model.cmti"}
+  "_build/install/default/lib/pixel_portfolio/lib/pixel_portfolio_lib__Model.cmx" {"lib/pixel_portfolio_lib__Model.cmx"}
+  "_build/install/default/lib/pixel_portfolio/lib/pixel_portfolio_lib__Money.cmi" {"lib/pixel_portfolio_lib__Money.cmi"}
+  "_build/install/default/lib/pixel_portfolio/lib/pixel_portfolio_lib__Money.cmt" {"lib/pixel_portfolio_lib__Money.cmt"}
+  "_build/install/default/lib/pixel_portfolio/lib/pixel_portfolio_lib__Money.cmti" {"lib/pixel_portfolio_lib__Money.cmti"}
+  "_build/install/default/lib/pixel_portfolio/lib/pixel_portfolio_lib__Money.cmx" {"lib/pixel_portfolio_lib__Money.cmx"}
+  "_build/install/default/lib/pixel_portfolio/lib/pixel_portfolio_lib__Order.cmi" {"lib/pixel_portfolio_lib__Order.cmi"}
+  "_build/install/default/lib/pixel_portfolio/lib/pixel_portfolio_lib__Order.cmt" {"lib/pixel_portfolio_lib__Order.cmt"}
+  "_build/install/default/lib/pixel_portfolio/lib/pixel_portfolio_lib__Order.cmti" {"lib/pixel_portfolio_lib__Order.cmti"}
+  "_build/install/default/lib/pixel_portfolio/lib/pixel_portfolio_lib__Order.cmx" {"lib/pixel_portfolio_lib__Order.cmx"}
+  "_build/install/default/lib/pixel_portfolio/lib/pixel_portfolio_lib__Ou.cmi" {"lib/pixel_portfolio_lib__Ou.cmi"}
+  "_build/install/default/lib/pixel_portfolio/lib/pixel_portfolio_lib__Ou.cmt" {"lib/pixel_portfolio_lib__Ou.cmt"}
+  "_build/install/default/lib/pixel_portfolio/lib/pixel_portfolio_lib__Ou.cmti" {"lib/pixel_portfolio_lib__Ou.cmti"}
+  "_build/install/default/lib/pixel_portfolio/lib/pixel_portfolio_lib__Ou.cmx" {"lib/pixel_portfolio_lib__Ou.cmx"}
+  "_build/install/default/lib/pixel_portfolio/lib/pixel_portfolio_lib__Portfolio.cmi" {"lib/pixel_portfolio_lib__Portfolio.cmi"}
+  "_build/install/default/lib/pixel_portfolio/lib/pixel_portfolio_lib__Portfolio.cmt" {"lib/pixel_portfolio_lib__Portfolio.cmt"}
+  "_build/install/default/lib/pixel_portfolio/lib/pixel_portfolio_lib__Portfolio.cmti" {"lib/pixel_portfolio_lib__Portfolio.cmti"}
+  "_build/install/default/lib/pixel_portfolio/lib/pixel_portfolio_lib__Portfolio.cmx" {"lib/pixel_portfolio_lib__Portfolio.cmx"}
+  "_build/install/default/lib/pixel_portfolio/lib/pixel_portfolio_lib__Save_game_state.cmi" {"lib/pixel_portfolio_lib__Save_game_state.cmi"}
+  "_build/install/default/lib/pixel_portfolio/lib/pixel_portfolio_lib__Save_game_state.cmt" {"lib/pixel_portfolio_lib__Save_game_state.cmt"}
+  "_build/install/default/lib/pixel_portfolio/lib/pixel_portfolio_lib__Save_game_state.cmti" {"lib/pixel_portfolio_lib__Save_game_state.cmti"}
+  "_build/install/default/lib/pixel_portfolio/lib/pixel_portfolio_lib__Save_game_state.cmx" {"lib/pixel_portfolio_lib__Save_game_state.cmx"}
+  "_build/install/default/lib/pixel_portfolio/lib/portfolio.ml" {"lib/portfolio.ml"}
+  "_build/install/default/lib/pixel_portfolio/lib/portfolio.mli" {"lib/portfolio.mli"}
+  "_build/install/default/lib/pixel_portfolio/lib/save_game_state.ml" {"lib/save_game_state.ml"}
+  "_build/install/default/lib/pixel_portfolio/lib/save_game_state.mli" {"lib/save_game_state.mli"}
+  "_build/install/default/lib/pixel_portfolio/opam"
+]
+libexec: [
+  "_build/install/default/lib/pixel_portfolio/lib/pixel_portfolio_lib.cmxs" {"lib/pixel_portfolio_lib.cmxs"}
+]
+bin: [
+  "_build/install/default/bin/pixel_portfolio"
+]
+doc: [
+  "_build/install/default/doc/pixel_portfolio/README.md"
+]

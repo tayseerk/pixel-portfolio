@@ -1,9 +1,1 @@
-(tests
- (names
-        )
- (libraries 
-   core 
-   ounit2 
-   qcheck
-   pixel_portfolio_lib)
- (preprocess (pps ppx_jane)))
+
