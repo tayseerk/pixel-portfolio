@@ -48,4 +48,8 @@ Important to note:
 
     We started the project again, making two different branches plus the main one. We got scared so everything Byron pushed Tayseer just copy pasted from the repo instead of pulling. At the end we ended up working on Tayseer’s laptop, just to make sure we did not ruin it again!
 
+Overview of the project:
+
+Pixel Portfolio is a command-line stock-simulation game that models a small universe of assets whose prices evolve through realistic stochastic processes, including Geometric Brownian Motion, Ornstein–Uhlenbeck mean reversion, correlated movement, and optional volatility-switches. The purpose of the project is to create a functional, fully deterministic market engine that supports market and limit orders, transaction fees, equity tracking, leveling, and persistent save/load functionality. We are intensely interested in the stock market, day trading, and the financial world, which motivated us to build a simulator that reflects real trading dynamics rather than a trivial game. This project allows us to combine financial modeling with OCaml’s functional abstractions while producing a reusable stochastic-simulation library as required in FPSE. It will mainly be used to test our knowledge of the stock market, as we would like to understand what actually drives it. Tayseer has minimal experience in the stock market during the COVID quarantine, and I would like to start trading stocks.  
+
 
