@@ -1,6 +1,4 @@
 (library
  (name pixel_portfolio_lib)
- (public_name pixel-portfolio.lib)
- (libraries core owl yojson)
- (preprocess (pps ppx_jane))
- (modules engine money gbm ou model order portfolio save_game_state))
+ (libraries core)
+ (preprocess (pps ppx_jane)))
