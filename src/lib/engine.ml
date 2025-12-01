@@ -24,7 +24,7 @@ let create config =
     else
       config.initial_prices
   in
-  let portfolio = Portfolio.empty ~initial_cash:config.initial_cash in
+  let portfolio = Portfolio.of_cash config.initial_cash in
   { config; time_index = 0; prices; portfolio; open_orders = [] }
 
 let prices t = t.prices
@@ -41,12 +41,43 @@ let add_open_order t order = { t with open_orders = order :: t.open_orders }
 let clear_open_orders t = { t with open_orders = [] }
 
 let submit_order t ~order =
-  let t' = add_open_order t order in
-  (t', None)
+  match order.kind with
+  | Order.Market ->
+      (* Immediately fill a market order at the current price if available. *)
+      (match Map.find t.prices order.ticker with
+       | None ->
+           (* No price for this ticker: just record as open, no execution. *)
+           let t' = add_open_order t order in
+           (t', None)
+       | Some px ->
+           let filled_order = Order.order_filled order in
+           let exec : Order.execution = { order = filled_order; fill_price = px } in
+           let t' =
+             t
+             |> add_open_order filled_order
+             |> apply_execution exec
+           in
+           (t', Some exec))
+  | Order.Limit _ ->
+      (* For now, we don't simulate matching logic: keep as open, no execution. *)
+      let t' = add_open_order t order in
+      (t', None)
 
 let apply_execution t _execution =
-  (* Stub: will finish to portfolio later. *)
-  t
+  let order = execution.Order.order in
+  (* Update portfolio cash and positions. *)
+  let new_portfolio =
+    Portfolio.update_position t.portfolio
+      ~ticker:order.ticker
+      ~side:order.type_of_order
+      ~quantity:order.quantity
+      ~fill_price:execution.fill_price
+  in
+  (* Drop this order from the open_orders list. *)
+  let new_open_orders =
+    List.filter t.open_orders ~f:(fun o -> o.id <> order.id)
+  in
+  { t with portfolio = new_portfolio; open_orders = new_open_orders }
 
 let tick t ~noise:_ =
   { t with time_index = t.time_index + 1 }
