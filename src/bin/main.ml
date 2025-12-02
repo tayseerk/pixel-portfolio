@@ -1,5 +1,6 @@
 open Core
 open Cmdliner
+open Pixel_portfolio_lib
 
 (* ---------- Common arguments ---------- *)
 
@@ -22,6 +23,68 @@ let steps_arg =
 let file_arg =
   let doc = "Path to a save file for loading/saving game state." in
   Arg.(required & opt (some string) None & info ["f"; "file"] ~docv:"FILE" ~doc)
+
+(* ---------- Simulation helpers ---------- *)
+
+let cents_of_dollars dollars =
+  Money.float_dollars_to_cents dollars
+
+let mk_gbm_asset ticker ~price ~mu ~sigma =
+  let process = Model.GBM (Gbm.create ~mu ~sigma ~dt:1.0) in
+  {
+    Model.ticker;
+    process;
+    initial_price = cents_of_dollars price;
+  }
+
+let mk_ou_asset ticker ~price ~kappa ~theta ~sigma =
+  let process = Model.OU (Ou.create ~kappa ~theta ~sigma ~dt:1.0) in
+  {
+    Model.ticker;
+    process;
+    initial_price = cents_of_dollars price;
+  }
+
+let default_universe =
+  [
+    mk_gbm_asset "PLTR" ~price:18.50 ~mu:0.18 ~sigma:0.38;
+    mk_gbm_asset "TSLA" ~price:220.00 ~mu:0.08 ~sigma:0.45;
+    mk_ou_asset "BND" ~price:75.00 ~kappa:1.1 ~theta:74.5 ~sigma:0.15;
+  ]
+  |> List.fold ~init:Model.empty_universe ~f:Model.add_asset
+
+let default_engine () =
+  let config : Engine.config =
+    {
+      universe = default_universe;
+      initial_prices = String.Map.empty;
+      initial_cash = cents_of_dollars 50_000.0;
+    }
+  in
+  Engine.create config
+
+let empty_noise : float String.Map.t = String.Map.empty
+
+let rec advance_ticks engine steps =
+  if steps <= 0 then engine
+  else
+    let next_engine = Engine.tick engine ~noise:empty_noise in
+    advance_ticks next_engine (steps - 1)
+
+let pretty_money amount =
+  Money.make_it_look_nice amount
+
+let print_prices prices =
+  printf "Prices:\n";
+  Map.iteri prices ~f:(fun ~key:ticker ~data:price ->
+      printf "  - %s: $%s\n" ticker (pretty_money price));
+  printf "%!"
+
+let report_simulation engine steps =
+  printf "Simulated %d tick(s). Current time index: %d\n"
+    steps (Engine.time_index engine);
+  print_prices (Engine.prices engine);
+  printf "Equity: $%s\n%!" (pretty_money (Engine.equity engine))
 
 (* ---------- Command handlers (placeholders only) ---------- *)
 
@@ -59,19 +122,17 @@ let portfolio_handler () =
   printf "  - Print total equity and maybe unrealized P&L.\n%!"
 
 let tick_handler () =
-  printf "Not implemented yet.\n";
-  printf "Expected behavior:\n";
-  printf "  - Advance the simulation by one 'tick' using Engine.tick.\n";
-  printf "  - Update prices with the GBM/OU models.\n";
-  printf "  - Print the new time index and updated prices.\n%!"
+  let engine = default_engine () in
+  let final_engine = advance_ticks engine 1 in
+  report_simulation final_engine 1
 
 let simulate_handler steps =
-  printf "Not implemented yet.\n";
-  printf "Expected behavior:\n";
-  printf "  - Create an initial Engine.t with a small universe of assets.\n";
-  printf "  - Run %d successive ticks (Engine.tick in a loop).\n" steps;
-  printf "  - At the end, print final prices and portfolio equity.\n";
-  printf "  - Optionally log a small price path for one ticker.\n%!"
+  if steps <= 0 then (
+    printf "Number of steps must be positive. Received %d.\n%!" steps
+  ) else
+    let engine = default_engine () in
+    let final_engine = advance_ticks engine steps in
+    report_simulation final_engine steps
 
 let save_handler file =
   printf "Not implemented yet.\n";
@@ -125,10 +186,10 @@ let portfolio_term =
   Cmd.v info term
 
 let tick_term =
-  let doc = "Advance the simulation by one tick (placeholder)." in
+  let doc = "Advance the simulation by one tick and show updated prices." in
   let man = [
     `S "EXAMPLES";
-    `P "Advance by one tick and show what would happen:";
+    `P "Advance by one tick and view prices:";
     `Pre "  pixel_portfolio tick";
   ] in
   let info = Cmd.info "tick" ~doc ~man in
@@ -136,7 +197,7 @@ let tick_term =
   Cmd.v info term
 
 let simulate_term =
-  let doc = "Run several ticks of the simulation (placeholder)." in
+  let doc = "Run several ticks of the simulation and print final prices/equity." in
   let man = [
     `S "EXAMPLES";
     `P "Simulate 20 steps:";

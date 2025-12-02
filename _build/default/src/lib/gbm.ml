@@ -13,15 +13,26 @@ let create ~mu ~sigma ?dt =
   { mu; sigma; dt }
 
 
-let step _ ~price ~noise:_ =
-  (* No price dynamics yet; we simply keep the price constant. *)
-  price
+let min_price = 1e-6
+
+let ensure_positive price =
+  (* keep the simulated price strictly positive to avoid downstream issues *)
+  Float.max price min_price
+
+let step t ~price ~noise =
+  let drift = (t.mu -. 0.5 *. Float.square t.sigma) *. t.dt in
+  let diffusion = t.sigma *. Float.sqrt t.dt *. noise in
+  let next_price = price *. Float.exp (drift +. diffusion) in
+  ensure_positive next_price
 
 let simulate_path model ~initial_price ~noises =
   let len = Array.length noises in
   let path = Array.create ~len initial_price in
+  let current = ref initial_price in
   for i = 0 to len - 1 do
-    path.(i) <- step model ~price:initial_price ~noise:noises.(i)
+    let next = step model ~price:!current ~noise:noises.(i) in
+    path.(i) <- next;
+    current := next
   done;
   path
 

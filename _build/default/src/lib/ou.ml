@@ -14,16 +14,26 @@ let create ~kappa ~theta ~sigma ?dt =
   { kappa; theta; sigma; dt }
 
 
+let min_state = 1e-6
 
-let step _ ~state ~noise:_ =
-  (* No mean-reversion dynamics yet; we simply keep the state constant. *)
-  state
+let ensure_positive state =
+  (* keep the simulated state strictly positive to avoid negative prices *)
+  Float.max state min_state
+
+let step t ~state ~noise =
+  let mean_revert = t.kappa *. (t.theta -. state) *. t.dt in
+  let diffusion = t.sigma *. Float.sqrt t.dt *. noise in
+  let next_state = state +. mean_revert +. diffusion in
+  ensure_positive next_state
 
 let simulate_path model ~initial_state ~noises =
   let len = Array.length noises in
   let path = Array.create ~len initial_state in
+  let current = ref initial_state in
   for i = 0 to len - 1 do
-    path.(i) <- step model ~state:initial_state ~noise:noises.(i)
+    let next = step model ~state:!current ~noise:noises.(i) in
+    path.(i) <- next;
+    current := next
   done;
   path
 

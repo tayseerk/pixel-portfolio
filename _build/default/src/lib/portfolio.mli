@@ -21,7 +21,11 @@ type t = {
 [@@deriving sexp]
 
 (* create a new portfolio with the given cash and no positions open *)
-val empty : initial_cash:Money.cents -> t
+val empty : t
+
+val of_cash : Money.cents -> t
+
+val with_cash : t -> Money.cents -> t
 
 (* returning the open position for a ticker in the portfolio, none if no position exists*)
 val position_for : t -> ticker -> position option

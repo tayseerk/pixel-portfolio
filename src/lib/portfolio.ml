@@ -23,7 +23,7 @@ let with_cash t new_cash = { t with cash = new_cash }
 
 let position_for t ticker = Map.find t.positions ticker
 
-let update_position t ~ticker:_ ~side:_ ~quantity:_ ~fill_price:_ =
+let update_position t ~ticker ~side ~quantity ~fill_price =
   let open Money in
   match side with
   | Order.Buy ->
@@ -69,7 +69,7 @@ let update_position t ~ticker:_ ~side:_ ~quantity:_ ~fill_price:_ =
 
 let all_positions t = Map.data t.positions
 
-let market_value ~prices:_ _t =
+let market_value ~prices t =
   Map.fold t.positions ~init:0 ~f:(fun ~key:_ ~data:pos acc ->
       match Map.find prices pos.ticker with
       | None -> acc
@@ -79,7 +79,7 @@ let market_value ~prices:_ _t =
           addition acc value)
 
 
-let equity ~prices:_ t =
+let equity ~prices t =
   let open Money in
   let mv = market_value ~prices t in
   addition t.cash mv

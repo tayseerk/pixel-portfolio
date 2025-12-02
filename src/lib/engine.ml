@@ -17,6 +17,8 @@ type t = {
   open_orders : Order.t list;
 }
 
+let random_state = Random.State.make [| 0x5eed_cafe |]
+
 let create config =
   let prices =
     if Map.is_empty config.initial_prices then
@@ -40,11 +42,27 @@ let open_orders t = t.open_orders
 let add_open_order t order = { t with open_orders = order :: t.open_orders }
 let clear_open_orders t = { t with open_orders = [] }
 
+let apply_execution t execution =
+  let order = execution.Order.order in
+  (* Update portfolio cash and positions. *)
+  let new_portfolio =
+    Portfolio.update_position t.portfolio
+      ~ticker:order.Order.ticker
+      ~side:order.Order.type_of_order
+      ~quantity:order.Order.quantity
+      ~fill_price:execution.fill_price
+  in
+  (* Drop this order from the open_orders list. *)
+  let new_open_orders =
+    List.filter t.open_orders ~f:(fun o -> o.Order.id <> order.Order.id)
+  in
+  { t with portfolio = new_portfolio; open_orders = new_open_orders }
+
 let submit_order t ~order =
-  match order.kind with
+  match order.Order.kind with
   | Order.Market ->
       (* Immediately fill a market order at the current price if available. *)
-      (match Map.find t.prices order.ticker with
+      (match Map.find t.prices order.Order.ticker with
        | None ->
            (* No price for this ticker: just record as open, no execution. *)
            let t' = add_open_order t order in
@@ -52,35 +70,31 @@ let submit_order t ~order =
        | Some px ->
            let filled_order = Order.order_filled order in
            let exec : Order.execution = { order = filled_order; fill_price = px } in
-           let t' =
-             t
-             |> add_open_order filled_order
-             |> apply_execution exec
-           in
+           let t_after = add_open_order t filled_order in
+           let t' = apply_execution t_after exec in
            (t', Some exec))
   | Order.Limit _ ->
       (* For now, we don't simulate matching logic: keep as open, no execution. *)
       let t' = add_open_order t order in
       (t', None)
 
-let apply_execution t _execution =
-  let order = execution.Order.order in
-  (* Update portfolio cash and positions. *)
-  let new_portfolio =
-    Portfolio.update_position t.portfolio
-      ~ticker:order.ticker
-      ~side:order.type_of_order
-      ~quantity:order.quantity
-      ~fill_price:execution.fill_price
-  in
-  (* Drop this order from the open_orders list. *)
-  let new_open_orders =
-    List.filter t.open_orders ~f:(fun o -> o.id <> order.id)
-  in
-  { t with portfolio = new_portfolio; open_orders = new_open_orders }
+let sample_noise () =
+  Random.State.float random_state 2.0 -. 1.0
 
-let tick t ~noise:_ =
-  { t with time_index = t.time_index + 1 }
+let ensure_noise_map t noise =
+  Map.fold t.config.universe ~init:noise ~f:(fun ~key ~data:_ acc ->
+      if Map.mem acc key then acc else Map.set acc ~key ~data:(sample_noise ()))
+
+let tick t ~noise =
+  let noise = ensure_noise_map t noise in
+  let new_prices =
+    Model.step_universe t.config.universe
+      ~current_prices:t.prices ~noises:noise
+  in
+  { t with
+    time_index = t.time_index + 1;
+    prices = new_prices;
+  }
 
 let equity t =
   Portfolio.equity ~prices:t.prices t.portfolio
