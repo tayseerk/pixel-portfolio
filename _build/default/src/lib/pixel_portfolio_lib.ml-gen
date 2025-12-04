@@ -23,3 +23,6 @@ module Portfolio = Pixel_portfolio_lib__Portfolio
 
 (** @canonical Pixel_portfolio_lib.Save_game_state *)
 module Save_game_state = Pixel_portfolio_lib__Save_game_state
+
+(** @canonical Pixel_portfolio_lib.Ticker *)
+module Ticker = Pixel_portfolio_lib__Ticker

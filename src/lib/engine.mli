@@ -1,7 +1,5 @@
 open Core
 
-type ticker = string [@@deriving sexp, compare, hash]
-
 (** config to start a new game instance *)
 type config = {
    universe : Model.universe;

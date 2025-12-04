@@ -52,10 +52,16 @@ lib: [
   "_build/install/default/lib/pixel_portfolio/lib/pixel_portfolio_lib__Save_game_state.cmt" {"lib/pixel_portfolio_lib__Save_game_state.cmt"}
   "_build/install/default/lib/pixel_portfolio/lib/pixel_portfolio_lib__Save_game_state.cmti" {"lib/pixel_portfolio_lib__Save_game_state.cmti"}
   "_build/install/default/lib/pixel_portfolio/lib/pixel_portfolio_lib__Save_game_state.cmx" {"lib/pixel_portfolio_lib__Save_game_state.cmx"}
+  "_build/install/default/lib/pixel_portfolio/lib/pixel_portfolio_lib__Ticker.cmi" {"lib/pixel_portfolio_lib__Ticker.cmi"}
+  "_build/install/default/lib/pixel_portfolio/lib/pixel_portfolio_lib__Ticker.cmt" {"lib/pixel_portfolio_lib__Ticker.cmt"}
+  "_build/install/default/lib/pixel_portfolio/lib/pixel_portfolio_lib__Ticker.cmti" {"lib/pixel_portfolio_lib__Ticker.cmti"}
+  "_build/install/default/lib/pixel_portfolio/lib/pixel_portfolio_lib__Ticker.cmx" {"lib/pixel_portfolio_lib__Ticker.cmx"}
   "_build/install/default/lib/pixel_portfolio/lib/portfolio.ml" {"lib/portfolio.ml"}
   "_build/install/default/lib/pixel_portfolio/lib/portfolio.mli" {"lib/portfolio.mli"}
   "_build/install/default/lib/pixel_portfolio/lib/save_game_state.ml" {"lib/save_game_state.ml"}
   "_build/install/default/lib/pixel_portfolio/lib/save_game_state.mli" {"lib/save_game_state.mli"}
+  "_build/install/default/lib/pixel_portfolio/lib/ticker.ml" {"lib/ticker.ml"}
+  "_build/install/default/lib/pixel_portfolio/lib/ticker.mli" {"lib/ticker.mli"}
   "_build/install/default/lib/pixel_portfolio/opam"
 ]
 libexec: [

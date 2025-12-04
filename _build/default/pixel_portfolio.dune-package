@@ -56,10 +56,16 @@
    lib/pixel_portfolio_lib__Save_game_state.cmt
    lib/pixel_portfolio_lib__Save_game_state.cmti
    lib/pixel_portfolio_lib__Save_game_state.cmx
+   lib/pixel_portfolio_lib__Ticker.cmi
+   lib/pixel_portfolio_lib__Ticker.cmt
+   lib/pixel_portfolio_lib__Ticker.cmti
+   lib/pixel_portfolio_lib__Ticker.cmx
    lib/portfolio.ml
    lib/portfolio.mli
    lib/save_game_state.ml
    lib/save_game_state.mli
+   lib/ticker.ml
+   lib/ticker.mli
    opam))
  (libexec (lib/pixel_portfolio_lib.cmxs))
  (bin (pixel_portfolio))
@@ -165,5 +171,12 @@
       (source
        (path Save_game_state)
        (intf (path lib/save_game_state.mli))
-       (impl (path lib/save_game_state.ml))))))
+       (impl (path lib/save_game_state.ml))))
+     (module
+      (obj_name pixel_portfolio_lib__Ticker)
+      (visibility public)
+      (source
+       (path Ticker)
+       (intf (path lib/ticker.mli))
+       (impl (path lib/ticker.ml))))))
    (wrapped true))))

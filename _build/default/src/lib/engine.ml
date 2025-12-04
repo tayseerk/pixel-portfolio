@@ -1,7 +1,5 @@
 open Core
 
-type ticker = string [@@deriving sexp, compare, hash]
-
 type config = {
   universe : Model.universe;
   initial_prices : Money.cents String.Map.t;

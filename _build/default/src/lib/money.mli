@@ -18,6 +18,12 @@ val addition : cents -> cents -> cents
 (** subtract *)
 val subtraction : cents -> cents -> cents
 
+(** infix addition operator *)
+val ( $+ ) : cents -> cents -> cents
+
+(** infix subtraction operator *)
+val ( $- ) : cents -> cents -> cents
+
 (** multiply *)
 val multiply : cents -> int -> cents
 

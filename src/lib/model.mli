@@ -5,8 +5,6 @@ open Core
    This manages stocks, each has its own stochastic process, either
    GBM or OU and an initial price *)
 
-type ticker = string [@@deriving sexp, compare, hash]
-
 (* type of stchastic model for a stock *)
 type process =
   | GBM of Gbm.t
@@ -16,7 +14,7 @@ type process =
 
 (* description of a single asses in a simulated game or universe*)
 type asset = {
-  ticker : ticker;
+  ticker : Ticker.t;
   process : process;
   initial_price : Money.cents;
 }
@@ -32,7 +30,7 @@ val empty_universe : universe
 val add_asset : universe -> asset -> universe
 
 (* finding asset in universe *)
-val find_asset : universe -> ticker -> asset option
+val find_asset : universe -> Ticker.t -> asset option
 
 (* returning map from ticker for every asset with the prices in cent *)
 val initial_prices : universe -> Money.cents String.Map.t

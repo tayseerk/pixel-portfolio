@@ -1,14 +1,12 @@
 open Core
 
-type ticker = string [@@deriving sexp, compare, hash]
-
 type process =
   | GBM of Gbm.t
   | OU of Ou.t
 [@@deriving sexp]
 
 type asset = {
-  ticker : ticker;
+  ticker : Ticker.t;
   process : process;
   initial_price : Money.cents;
 }

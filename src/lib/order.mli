@@ -1,5 +1,3 @@
-type ticker = string [@@deriving sexp, compare]
-
 type order_type =
   | Buy
   | Sell
@@ -22,7 +20,7 @@ type order_status =
 
 type t = {
   id : order_id;
-  ticker : ticker;
+  ticker : Ticker.t;
   type_of_order : order_type;
   quantity : int;
   kind : order_kind;
@@ -37,14 +35,14 @@ type execution = {
 [@@deriving sexp, fields]
 
 val create_market :
-  ticker:ticker ->
+  ticker:Ticker.t ->
   type_of_order:order_type ->
   quantity:int ->
   ?id:order_id ->
   t
 
 val create_limit :
-  ticker:ticker ->
+  ticker:Ticker.t ->
   type_of_order:order_type ->
   quantity:int ->
   limit_price:Money.cents ->

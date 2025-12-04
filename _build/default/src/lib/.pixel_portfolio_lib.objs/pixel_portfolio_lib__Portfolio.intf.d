@@ -1,1 +1,1 @@
-src/lib/portfolio.pp.mli: Core Fieldslib Money Order Ppx_hash_lib Sexplib0 String
+src/lib/portfolio.pp.mli: Core Fieldslib Money Order Sexplib0 String Ticker

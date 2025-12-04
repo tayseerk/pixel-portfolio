@@ -1,1 +1,4 @@
+(test
+ (name pixel_portfolio_tests)
+ (libraries core ounit2 pixel_portfolio_lib))
 

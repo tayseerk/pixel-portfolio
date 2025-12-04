@@ -1,9 +1,7 @@
 open Core
 
-type ticker = string [@@deriving sexp, compare, hash]
-
 type position = {
-  ticker : ticker;
+  ticker : Ticker.t;
   quantity : int;
   avg_cost : Money.cents;
 }

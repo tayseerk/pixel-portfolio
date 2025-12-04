@@ -3,11 +3,9 @@ open Core
 (** The portfolio management for pixel-portfolio
    This module will track the player's cash, holdings, equity,
    and the level of the player*)
-type ticker = string [@@deriving sexp, compare, hash]
-
 (* Position in a ticker *)
 type position = {
-  ticker : ticker;
+  ticker : Ticker.t;
   quantity : int;
   avg_cost : Money.cents;
 }
@@ -28,12 +26,12 @@ val of_cash : Money.cents -> t
 val with_cash : t -> Money.cents -> t
 
 (* returning the open position for a ticker in the portfolio, none if no position exists*)
-val position_for : t -> ticker -> position option
+val position_for : t -> Ticker.t -> position option
 
 (* Returning new portfolio that is obtained by applying a filled trde to the portfolio *)
 val update_position :
   t ->
-  ticker:ticker ->
+  ticker:Ticker.t ->
   side:Order.side ->
   quantity:int ->
   fill_price:Money.cents ->

@@ -17,6 +17,9 @@ let addition (x : cents) (y : cents) : cents = x + y
 let subtraction (x : cents) (y : cents) : cents = x - y
 let multiply (amount : cents) (d : int) : cents = amount * d
 
+let ( $+ ) = addition
+let ( $- ) = subtraction
+
 let make_it_look_nice c =
   let sign, abs_val_c =
     if c < 0 then "-", Int.neg c else "", c

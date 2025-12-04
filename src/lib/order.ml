@@ -1,8 +1,6 @@
 [@@@warning "-16"]
 open Core
 
-type ticker = string [@@deriving sexp, compare]
-
 type order_type =
   | Buy
   | Sell
@@ -25,7 +23,7 @@ type order_status =
 
 type t = {
   id : order_id;
-  ticker : ticker;
+  ticker : Ticker.t;
   type_of_order : order_type;
   quantity : int;
   kind : order_kind;
