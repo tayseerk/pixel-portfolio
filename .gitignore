@@ -1,5 +1,5 @@
 # Dune build outputs
-/_build/
+_build/
 /dune-workspace.local
 *.install
 .merlin
