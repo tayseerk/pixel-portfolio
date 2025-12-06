@@ -8,7 +8,7 @@ type config = {
 }
 [@@deriving sexp]
 
-type t
+type t [@@deriving sexp]
 
 (**create new engine state from the config above *)
 val create : config -> t
@@ -59,5 +59,7 @@ val tick :
 (** cash + positions of the player in cents *)
 val equity : t -> Money.cents
 
-(** easy, medium, hard where easy gives you the most money, medium 2nd most, and hard gives you the least amount*)
 val level : t -> int
+
+(** Re-run matching on open limit orders against current prices without advancing time. *)
+val reconcile_open_orders : t -> t

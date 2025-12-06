@@ -1,4 +1,5 @@
-(test
- (name pixel_portfolio_tests)
- (libraries core ounit2 pixel_portfolio_lib))
+(tests
+ (names pixel_portfolio_tests)
+ (libraries pixel_portfolio.lib core ounit2 qcheck)
+ (preprocess (pps ppx_jane)))
 

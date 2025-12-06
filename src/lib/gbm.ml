@@ -22,7 +22,13 @@ let ensure_positive price =
 let step t ~price ~noise =
   let drift = (t.mu -. 0.5 *. Float.square t.sigma) *. t.dt in
   let diffusion = t.sigma *. Float.sqrt t.dt *. noise in
-  let next_price = price *. Float.exp (drift +. diffusion) in
+  (* cap log-return to keep daily moves realistic (~20% max up/down) *)
+  let log_return =
+    drift +. diffusion
+    |> Float.min 0.2
+    |> Float.max (-0.2)
+  in
+  let next_price = price *. Float.exp log_return in
   ensure_positive next_price
 
 let simulate_path model ~initial_price ~noises =

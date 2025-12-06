@@ -23,7 +23,15 @@ let ensure_positive state =
 let step t ~state ~noise =
   let mean_revert = t.kappa *. (t.theta -. state) *. t.dt in
   let diffusion = t.sigma *. Float.sqrt t.dt *. noise in
-  let next_state = state +. mean_revert +. diffusion in
+  let delta = mean_revert +. diffusion in
+  (* cap move to +/-20% of current state to keep daily swings realistic *)
+  let max_step = 0.2 *. state in
+  let capped_delta =
+    delta
+    |> Float.min max_step
+    |> Float.max (-.max_step)
+  in
+  let next_state = state +. capped_delta in
   ensure_positive next_state
 
 let simulate_path model ~initial_state ~noises =

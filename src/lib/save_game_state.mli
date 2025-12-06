@@ -5,8 +5,7 @@ type save_status =
   | Fail of string
 [@@deriving sexp]
 
+(* Persist engine state to a sexp file *)
 val save_sexp : filename:string -> Engine.t -> save_status
+(* Load engine state from a sexp file *)
 val load_sexp : filename:string -> (Engine.t, string) Result.t
-
-val save_json : filename:string -> Engine.t -> save_status
-val load_json : filename:string -> (Engine.t, string) Result.t

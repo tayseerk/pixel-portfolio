@@ -1,4 +1,0 @@
-(executable
- (name owl_demo)
- (libraries core owl)
- (preprocess (pps ppx_jane)))

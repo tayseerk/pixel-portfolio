@@ -1,255 +1,552 @@
 open Core
 open Cmdliner
+open Cmdliner.Term.Syntax
 open Pixel_portfolio_lib
 
-(* ---------- Common arguments ---------- *)
+(* ----- Game configuration ----- *)
 
-let ticker_arg =
-  let doc = "Stock ticker symbol, e.g. AAPL, GOOGL, TSLA." in
-  Arg.(required & pos 0 (some string) None & info [] ~docv:"TICKER" ~doc)
+type difficulty =
+  | Easy
+  | Medium
+  | Hard
 
-let qty_arg =
-  let doc = "Quantity of shares to buy or sell." in
-  Arg.(required & opt (some int) None & info ["q"; "qty"] ~docv:"QTY" ~doc)
+(* Map difficulty to starting cash *)
+let difficulty_to_cash = function
+  | Easy -> Money.float_dollars_to_cents 100_000.0
+  | Medium -> Money.float_dollars_to_cents 25_000.0
+  | Hard -> Money.float_dollars_to_cents 5_000.0
 
-let price_arg =
-  let doc = "Limit or reference price in dollars, e.g. 100.25." in
-  Arg.(value & opt (some string) None & info ["p"; "price"] ~docv:"PRICE" ~doc)
+let default_state_file = "game.sexp"
 
-let steps_arg =
-  let doc = "Number of simulation steps / ticks to run." in
-  Arg.(value & opt int 10 & info ["n"; "steps"] ~docv:"N" ~doc)
+(* Dollar helper *)
+let cents_of_dollars dollars = Money.float_dollars_to_cents dollars
 
-let file_arg =
-  let doc = "Path to a save file for loading/saving game state." in
-  Arg.(required & opt (some string) None & info ["f"; "file"] ~docv:"FILE" ~doc)
-
-(* ---------- Simulation helpers ---------- *)
-
-let cents_of_dollars dollars =
-  Money.float_dollars_to_cents dollars
-
+(* Build a GBM asset *)
 let mk_gbm_asset ticker ~price ~mu ~sigma =
   let process = Model.GBM (Gbm.create ~mu ~sigma ~dt:1.0) in
-  {
-    Model.ticker;
-    process;
-    initial_price = cents_of_dollars price;
-  }
+  { Model.ticker; process; initial_price = cents_of_dollars price }
 
+(* Build an OU asset *)
 let mk_ou_asset ticker ~price ~kappa ~theta ~sigma =
   let process = Model.OU (Ou.create ~kappa ~theta ~sigma ~dt:1.0) in
-  {
-    Model.ticker;
-    process;
-    initial_price = cents_of_dollars price;
-  }
+  { Model.ticker; process; initial_price = cents_of_dollars price }
 
-let default_universe =
-  [
-    mk_gbm_asset "PLTR" ~price:18.50 ~mu:0.18 ~sigma:0.38;
-    mk_gbm_asset "TSLA" ~price:220.00 ~mu:0.08 ~sigma:0.45;
-    mk_ou_asset "BND" ~price:75.00 ~kappa:1.1 ~theta:74.5 ~sigma:0.15;
-  ]
+let base_universe =
+  (* Default universe of tickers with GBM/OU processes *)
+  let trending =
+    [
+      mk_gbm_asset "AAPL" ~price:195.0 ~mu:0.12 ~sigma:0.25;
+      mk_gbm_asset "AMZN" ~price:140.0 ~mu:0.11 ~sigma:0.30;
+      mk_gbm_asset "GOOG" ~price:125.0 ~mu:0.10 ~sigma:0.22;
+      mk_gbm_asset "NVDA" ~price:450.0 ~mu:0.18 ~sigma:0.55;
+      mk_gbm_asset "PLTR" ~price:18.5 ~mu:0.20 ~sigma:0.40;
+    ]
+  and penny =
+    [
+      mk_ou_asset "DKSC" ~price:1.20 ~kappa:1.6 ~theta:1.10 ~sigma:0.35;
+      mk_ou_asset "RNWF" ~price:0.80 ~kappa:1.4 ~theta:0.75 ~sigma:0.40;
+      mk_ou_asset "BCEKF" ~price:1.90 ~kappa:1.2 ~theta:1.85 ~sigma:0.25;
+      mk_ou_asset "SVRSF" ~price:1.05 ~kappa:1.3 ~theta:1.0 ~sigma:0.30;
+      mk_ou_asset "T1E" ~price:2.50 ~kappa:0.9 ~theta:2.4 ~sigma:0.18;
+    ]
+  in
+  List.append trending penny
   |> List.fold ~init:Model.empty_universe ~f:Model.add_asset
 
-let default_engine () =
-  let config : Engine.config =
+let create_engine difficulty =
+  (* Build engine config from difficulty and universe *)
+  let config =
     {
-      universe = default_universe;
+      Engine.universe = base_universe;
       initial_prices = String.Map.empty;
-      initial_cash = cents_of_dollars 50_000.0;
+      initial_cash = difficulty_to_cash difficulty;
     }
   in
   Engine.create config
 
-let empty_noise : float String.Map.t = String.Map.empty
+(* ----- IO helpers ----- *)
 
-let rec advance_ticks engine steps =
-  if steps <= 0 then engine
+(* Copy a file *)
+let copy_file ~src ~dst =
+  Or_error.try_with (fun () ->
+      let data = In_channel.read_all src in
+      Out_channel.write_all dst ~data)
+
+(* Backup a file if it exists *)
+let backup_if_exists path =
+  if Stdlib.Sys.file_exists path then
+    let backup = path ^ ".bak" in
+    copy_file ~src:path ~dst:backup
+    |> Or_error.map ~f:(fun () ->
+           printf "Existing state saved to %s\n%!" backup)
   else
-    let next_engine = Engine.tick engine ~noise:empty_noise in
-    advance_ticks next_engine (steps - 1)
+    Or_error.return ()
 
-let pretty_money amount =
-  Money.make_it_look_nice amount
+let save_engine ~state engine =
+  match Save_game_state.save_sexp ~filename:state engine with
+  | Save_game_state.Pass _ -> Or_error.return ()
+  | Fail msg -> Or_error.error_string msg
 
-let print_prices prices =
-  printf "Prices:\n";
-  Map.iteri prices ~f:(fun ~key:ticker ~data:price ->
-      printf "  - %s: $%s\n" ticker (pretty_money price));
+let load_engine ~state =
+  let open Or_error.Let_syntax in
+  if Stdlib.Sys.file_exists state then
+    match Save_game_state.load_sexp ~filename:state with
+    | Ok engine ->
+        let engine' = Engine.reconcile_open_orders engine in
+        let%map () = save_engine ~state engine' in
+        engine'
+    | Error msg -> Or_error.error_string msg
+  else
+    Or_error.errorf "No saved game at %s. Run new first." state
+
+let ensure_source_exists path =
+  if Stdlib.Sys.file_exists path then Or_error.return ()
+  else Or_error.errorf "File %s does not exist." path
+
+let pretty_money amount = Money.make_it_look_nice amount
+
+let initial_price_map (engine : Engine.t) =
+  let cfg = Engine.config engine in
+  if Map.is_empty cfg.initial_prices then
+    Model.initial_prices cfg.universe
+  else
+    cfg.initial_prices
+
+let print_prices engine =
+  (* Show current prices with deltas vs initial *)
+  let current = Engine.prices engine in
+  let reference = initial_price_map engine in
+  printf "\nCurrent prices (t=%d):\n" (Engine.time_index engine);
+  Map.iteri current ~f:(fun ~key:ticker ~data:price ->
+      let ref_price =
+        Map.find reference ticker
+        |> Option.value ~default:price
+      in
+      let delta = price - ref_price in
+      let pct =
+        if ref_price = 0 then 0.0
+        else
+          let d = Money.cents_to_float_dollars delta in
+          let r = Money.cents_to_float_dollars ref_price in
+          (d /. r) *. 100.0
+      in
+      printf "  %s: $%s (%s%s, %.2f%%)\n"
+        ticker
+        (pretty_money price)
+        (if delta >= 0 then "+" else "")
+        (pretty_money delta)
+        pct);
   printf "%!"
 
-let report_simulation engine steps =
-  printf "Simulated %d tick(s). Current time index: %d\n"
-    steps (Engine.time_index engine);
-  print_prices (Engine.prices engine);
-  printf "Equity: $%s\n%!" (pretty_money (Engine.equity engine))
+let rec advance_ticks engine steps =
+  (* Run N ticks, generating noise internally *)
+  if steps <= 0 then engine
+  else
+    let next_engine = Engine.tick engine ~noise:String.Map.empty in
+    advance_ticks next_engine (steps - 1)
 
-(* ---------- Command handlers (placeholders only) ---------- *)
+let print_positions engine =
+  (* Show cash, equity, positions, open orders *)
+  let portfolio = Engine.portfolio engine in
+  printf "\nCash: $%s\n" (pretty_money portfolio.Portfolio.cash);
+  printf "Equity (cash + positions): $%s\n"
+    (pretty_money (Engine.equity engine));
+  printf "Level: %d\n" (Engine.level engine);
+  let positions = Portfolio.all_positions portfolio in
+  if List.is_empty positions then
+    printf "Positions: none\n"
+  else (
+    printf "Positions:\n";
+    List.iter positions ~f:(fun pos ->
+        printf "  - %s: %d share(s) @ $%s avg\n"
+          (Ticker.to_string pos.Portfolio.ticker)
+          pos.Portfolio.quantity
+          (pretty_money pos.Portfolio.avg_cost)));
+  let open_orders = Engine.open_orders engine in
+  if List.is_empty open_orders then
+    printf "Open orders: none\n"
+  else (
+    printf "Open orders:\n";
+    List.iter open_orders ~f:(fun order ->
+        let side =
+          match order.Order.type_of_order with
+          | Buy -> "BUY"
+          | Sell -> "SELL"
+        in
+        let kind =
+          match order.Order.kind with
+          | Market -> "market"
+          | Limit px -> "limit $" ^ pretty_money px
+        in
+        printf "  - #%d %s %d %s (%s)\n"
+          order.Order.id side order.Order.quantity
+          (Ticker.to_string order.Order.ticker) kind))
 
-let buy_handler ticker qty price_opt =
-  let price_str =
-    match price_opt with
-    | None -> "market price (no explicit price provided)"
-    | Some p -> Printf.sprintf "$%s" p
+let price_arg_to_cents = function
+  | None -> Or_error.return None
+  | Some dollars ->
+      if Float.(dollars <= 0.) then
+        Or_error.errorf "Price must be positive, got %f" dollars
+      else
+        Or_error.return (Some (Money.float_dollars_to_cents dollars))
+
+(* Quantity must be positive *)
+let qty_must_be_positive qty =
+  if qty <= 0 then Or_error.errorf "Quantity must be positive, got %d" qty
+  else Or_error.return ()
+
+let place_order ~state ~ticker ~qty ~price_opt ~side =
+  (* Create market/limit order, persist state, and print status *)
+  let open Or_error.Let_syntax in
+  let%bind () = qty_must_be_positive qty in
+  let%bind limit_price = price_arg_to_cents price_opt in
+  let%bind engine = load_engine ~state in
+  let order =
+    match limit_price with
+    | None ->
+        Order.create_market ~ticker ~type_of_order:side ~quantity:qty ?id:None
+    | Some px ->
+        Order.create_limit ~ticker ~type_of_order:side ~quantity:qty
+          ~limit_price:px ?id:None
   in
-  printf "Not implemented yet.\n";
-  printf "Expected behavior:\n";
-  printf "  - Create a BUY order for %d share(s) of %s at %s.\n" qty ticker price_str;
-  printf "  - Send it to the trading engine (Engine.submit_order).\n";
-  printf "  - Update the portfolio cash/positions if the order is filled.\n";
-  printf "  - Print the new cash balance and position summary.\n%!"
+  let engine', exec_opt = Engine.submit_order engine ~order in
+  let%bind () = save_engine ~state engine' in
+  (match exec_opt with
+   | Some exec ->
+       printf "%s order filled immediately at $%s\n%!"
+         (match side with Buy -> "Buy" | Sell -> "Sell")
+         (pretty_money exec.Order.fill_price)
+   | None ->
+       printf
+         "%s order recorded as an open order (limit not reached yet).\n%!"
+         (match side with Buy -> "Buy" | Sell -> "Sell"));
+  print_positions engine';
+  return ()
 
-let sell_handler ticker qty price_opt =
-  let price_str =
-    match price_opt with
-    | None -> "market price (no explicit price provided)"
-    | Some p -> Printf.sprintf "$%s" p
-  in
-  printf "Not implemented yet.\n";
-  printf "Expected behavior:\n";
-  printf "  - Create a SELL order for %d share(s) of %s at %s.\n" qty ticker price_str;
-  printf "  - Send it to the trading engine (Engine.submit_order).\n";
-  printf "  - Update the portfolio by reducing the position and adjusting cash.\n";
-  printf "  - Print realized/unrealized P&L and current positions.\n%!"
-
-let portfolio_handler () =
-  printf "Not implemented yet.\n";
-  printf "Expected behavior:\n";
-  printf "  - Query the current portfolio from the engine.\n";
-  printf "  - Print cash balance, each open position (ticker, qty, avg cost).\n";
-  printf "  - Print total equity and maybe unrealized P&L.\n%!"
-
-let tick_handler () =
-  let engine = default_engine () in
-  let final_engine = advance_ticks engine 1 in
-  report_simulation final_engine 1
-
-let simulate_handler steps =
-  if steps <= 0 then (
-    printf "Number of steps must be positive. Received %d.\n%!" steps
-  ) else
-    let engine = default_engine () in
+let simulate ~state ~steps =
+  (* Advance simulation N steps, save, and show deltas *)
+  let open Or_error.Let_syntax in
+  if steps <= 0 then
+    Or_error.errorf "Steps must be >= 1, got %d" steps
+  else
+    let%bind engine = load_engine ~state in
+    let old_prices = Engine.prices engine in
     let final_engine = advance_ticks engine steps in
-    report_simulation final_engine steps
+    let%bind () = save_engine ~state final_engine in
+    printf "Simulated %d step(s). Current time index: %d\n"
+      steps (Engine.time_index final_engine);
+    let new_prices = Engine.prices final_engine in
+    Map.merge old_prices new_prices ~f:(fun ~key:ticker -> function
+      | `Both (old_price, new_price) ->
+          let delta = new_price - old_price in
+          let pct =
+            if old_price = 0 then 0.0
+            else
+              let d = Money.cents_to_float_dollars delta in
+              let o = Money.cents_to_float_dollars old_price in
+              (d /. o) *. 100.0
+          in
+          printf "  %s: $%s -> $%s (%s%s, %.2f%%)\n"
+            ticker
+            (pretty_money old_price)
+            (pretty_money new_price)
+            (if delta >= 0 then "+" else "")
+            (pretty_money delta)
+            pct;
+          None
+      | _ -> None)
+    |> ignore;
+    print_positions final_engine;
+    return ()
 
-let save_handler file =
-  printf "Not implemented yet.\n";
-  printf "Expected behavior:\n";
-  printf "  - Serialize the current Engine.t using Save_game_state.save_sexp or save_json.\n";
-  printf "  - Write it to the file: %s.\n" file;
-  printf "  - Print a confirmation or error message.\n%!"
+let new_game ~state ~mode =
+  (* Start a new game, backing up any existing state file *)
+  let open Or_error.Let_syntax in
+  let%bind () = backup_if_exists state in
+  let engine = create_engine mode in
+  let%bind () = save_engine ~state engine in
+  printf "Started new %s game at %s.\n"
+    (match mode with Easy -> "easy" | Medium -> "medium" | Hard -> "hard")
+    state;
+  print_positions engine;
+  print_prices engine;
+  return engine
 
-let load_handler file =
-  printf "Not implemented yet.\n";
-  printf "Expected behavior:\n";
-  printf "  - Read the engine state from %s using Save_game_state.load_sexp or load_json.\n" file;
-  printf "  - Replace the current Engine.t in memory with the loaded one.\n";
-  printf "  - Print a brief summary of the restored portfolio/prices.\n%!"
+let save_as ~state ~target =
+  (* Copy current state file to a new target *)
+  let open Or_error.Let_syntax in
+  let%bind () = ensure_source_exists state in
+  let%bind engine = load_engine ~state in
+  let%bind () = save_engine ~state:target engine in
+  printf "Saved current game to %s\n%!" target;
+  return ()
 
-(* ---------- Cmdliner term & command definitions ---------- *)
+let load_into ~state ~source =
+  (* Load from source into state, backing up the current state *)
+  let open Or_error.Let_syntax in
+  let%bind () = ensure_source_exists source in
+  let%bind () = backup_if_exists state in
+  let%bind engine =
+    match Save_game_state.load_sexp ~filename:source with
+    | Ok eng -> Or_error.return eng
+    | Error msg -> Or_error.error_string msg
+  in
+  let%bind () = save_engine ~state engine in
+  printf "Loaded state from %s into %s\n%!" source state;
+  print_positions engine;
+  print_prices engine;
+  return engine
 
-let buy_term =
-  let doc = "Place a BUY order (placeholder; does not change state yet)." in
-  let man = [
-    `S "EXAMPLES";
-    `P "Buy 10 shares of AAPL at market price:";
-    `Pre "  pixel_portfolio buy AAPL --qty 10";
-    `P "Buy 5 shares of TSLA with an explicit limit price:";
-    `Pre "  pixel_portfolio buy TSLA --qty 5 --price 200.50";
-  ] in
-  let info = Cmd.info "buy" ~doc ~man in
-  let term = Term.(const buy_handler $ ticker_arg $ qty_arg $ price_arg) in
-  Cmd.v info term
+(* ----- Interactive shell ----- *)
 
-let sell_term =
-  let doc = "Place a SELL order (placeholder; does not change state yet)." in
-  let man = [
-    `S "EXAMPLES";
-    `P "Sell 3 shares of AAPL at market price:";
-    `Pre "  pixel_portfolio sell AAPL --qty 3";
-  ] in
-  let info = Cmd.info "sell" ~doc ~man in
-  let term = Term.(const sell_handler $ ticker_arg $ qty_arg $ price_arg) in
-  Cmd.v info term
+let print_welcome () =
+  (* Greeting banner *)
+  printf "Welcome to Pixel Portfolio!\n%!"
 
-let portfolio_term =
-  let doc = "Show current portfolio (placeholder output)." in
-  let man = [
-    `S "EXAMPLES";
-    `P "Display portfolio summary:";
-    `Pre "  pixel_portfolio portfolio";
-  ] in
-  let info = Cmd.info "portfolio" ~doc ~man in
-  let term = Term.(const portfolio_handler $ const ()) in
-  Cmd.v info term
+let print_help () =
+  (* REPL help; CLI commands still parsed by Cmdliner *)
+  printf "Commands:\n";
+  printf "  new [easy|medium|hard] [state]   Start a new game (default state=%s).\n"
+    default_state_file;
+  printf "  save <file> [state]              Save current state to file.\n";
+  printf "  portfolio [state]                Show cash, equity, positions, open orders.\n";
+  printf "  buy <ticker> <qty> [price] [state]    Market or limit buy.\n";
+  printf "  sell <ticker> <qty> [price] [state]   Market or stop/limit sell.\n";
+  printf "  simulate [steps] [state]         Run N steps (default 1).\n";
+  printf "  help                             Show this help.\n";
+  printf "  exit                             Quit the game.\n%!"
 
-let tick_term =
-  let doc = "Advance the simulation by one tick and show updated prices." in
-  let man = [
-    `S "EXAMPLES";
-    `P "Advance by one tick and view prices:";
-    `Pre "  pixel_portfolio tick";
-  ] in
-  let info = Cmd.info "tick" ~doc ~man in
-  let term = Term.(const tick_handler $ const ()) in
-  Cmd.v info term
+let parse_difficulty = function
+  | "easy" -> Some Easy
+  | "medium" -> Some Medium
+  | "hard" -> Some Hard
+  | _ -> None
 
-let simulate_term =
-  let doc = "Run several ticks of the simulation and print final prices/equity." in
-  let man = [
-    `S "EXAMPLES";
-    `P "Simulate 20 steps:";
-    `Pre "  pixel_portfolio simulate --steps 20";
-  ] in
-  let info = Cmd.info "simulate" ~doc ~man in
-  let term = Term.(const simulate_handler $ steps_arg) in
-  Cmd.v info term
+let ask_yes_no ~default prompt =
+  (* Simple yes/no stdin prompt with default *)
+  let suffix = if default then "[Y/n]" else "[y/N]" in
+  printf "%s %s %!" prompt suffix;
+  match In_channel.input_line In_channel.stdin with
+  | None -> default
+  | Some line ->
+      (match String.lowercase (String.strip line) with
+       | "" -> default
+       | "y" | "yes" -> true
+       | "n" | "no" -> false
+       | _ -> default)
 
-let save_term =
-  let doc = "Save game state to a file (placeholder)." in
-  let man = [
-    `S "EXAMPLES";
-    `P "Save to game.sexp:";
-    `Pre "  pixel_portfolio save --file game.sexp";
-  ] in
-  let info = Cmd.info "save" ~doc ~man in
-  let term = Term.(const save_handler $ file_arg) in
+let rec prompt_difficulty () =
+  (* Simple stdin prompt for difficulty selection *)
+  printf "Choose difficulty (easy/medium/hard, default=easy): %!";
+  match In_channel.input_line In_channel.stdin with
+  | None | Some "" -> Easy
+  | Some line ->
+      let line = String.lowercase (String.strip line) in
+      (match parse_difficulty line with
+       | Some d -> d
+       | None ->
+           printf "Unknown difficulty, please try again.\n%!";
+           prompt_difficulty ())
+
+let split_input line =
+  (* Tokenize a line on spaces/tabs *)
+  String.split_on_chars ~on:[' '; '\t'] (String.strip line)
+  |> List.filter ~f:(fun s -> not (String.is_empty s))
+
+let to_cmdliner = function
+  (* Convert Or_error to Cmdliner result shape *)
+  | Ok () -> `Ok ()
+  | Error err -> `Error (false, Error.to_string_hum err)
+
+(* Cmdliner argument definitions *)
+let state_arg =
+  let doc = "State file to read/write." in
+  Arg.(value & opt string default_state_file & info [ "state" ] ~docv:"STATE" ~doc)
+
+let mode_arg =
+  let doc = "Difficulty: easy, medium, hard." in
+  Arg.(value & opt (enum [ ("easy", Easy); ("medium", Medium); ("hard", Hard) ]) Easy
+       & info [ "mode" ] ~docv:"MODE" ~doc)
+
+let file_arg docv doc =
+  Arg.(required & pos 0 (some string) None & info ~doc ~docv [])
+
+let ticker_arg =
+  Arg.(required & pos 0 (some string) None & info ~doc:"Ticker symbol" ~docv:"TICKER" [])
+
+let qty_arg =
+  Arg.(required & pos 1 (some int) None & info ~doc:"Quantity (positive int)" ~docv:"QTY" [])
+
+let price_arg =
+  Arg.(value & pos 2 (some float) None & info ~doc:"Limit/stop price (omit for market)" ~docv:"PRICE" [])
+
+let steps_arg =
+  Arg.(value & opt int 1 & info ~doc:"Number of steps to simulate (default 1)" ~docv:"STEPS" [ "steps" ])
+
+(* Cmdliner command terms *)
+let new_term =
+  let doc = "Start a new game with the selected difficulty." in
+  let info = Cmd.info "new" ~doc in
+  let term =
+    Term.(
+      ret
+        (let+ state = state_arg
+         and+ mode = mode_arg in
+         new_game ~state ~mode |> Or_error.map ~f:(fun _ -> ()) |> to_cmdliner))
+  in
   Cmd.v info term
 
 let load_term =
-  let doc = "Load game state from a file (placeholder)." in
-  let man = [
-    `S "EXAMPLES";
-    `P "Load from game.sexp:";
-    `Pre "  pixel_portfolio load --file game.sexp";
-  ] in
-  let info = Cmd.info "load" ~doc ~man in
-  let term = Term.(const load_handler $ file_arg) in
+  let doc = "Load a saved game into the current state file." in
+  let info = Cmd.info "load" ~doc in
+  let term =
+    Term.(
+      ret
+        (let+ state = state_arg
+         and+ file = file_arg "FILE" "Save file to load" in
+         load_into ~state ~source:file |> Or_error.map ~f:(fun _ -> ()) |> to_cmdliner))
+  in
   Cmd.v info term
 
-(* ---------- Top-level command group ---------- *)
+let save_term =
+  let doc = "Save the current game state to a file." in
+  let info = Cmd.info "save" ~doc in
+  let term =
+    Term.(
+      ret
+        (let+ state = state_arg
+         and+ file = file_arg "FILE" "Destination file" in
+         save_as ~state ~target:file |> to_cmdliner))
+  in
+  Cmd.v info term
+
+let portfolio_term =
+  let doc = "Show cash, equity, positions, open orders, and prices." in
+  let info = Cmd.info "portfolio" ~doc in
+  let term =
+    Term.(
+      ret
+        (let+ state = state_arg in
+         load_engine ~state
+         |> Or_error.map ~f:(fun eng ->
+                print_positions eng;
+                print_prices eng)
+         |> to_cmdliner))
+  in
+  Cmd.v info term
+
+let simulate_term =
+  let doc = "Advance the market by N steps (default 1)." in
+  let info = Cmd.info "simulate" ~doc in
+  let term =
+    Term.(
+      ret
+        (let+ state = state_arg
+         and+ steps = steps_arg in
+         simulate ~state ~steps |> to_cmdliner))
+  in
+  Cmd.v info term
+
+let buy_term =
+  let doc = "Buy shares (market if no price, limit/stop if price provided)." in
+  let info = Cmd.info "buy" ~doc in
+  let term =
+    Term.(
+      ret
+        (let+ state = state_arg
+         and+ ticker = ticker_arg
+         and+ qty = qty_arg
+         and+ price = price_arg in
+         place_order ~state ~ticker ~qty ~price_opt:price ~side:Order.Buy
+         |> to_cmdliner))
+  in
+  Cmd.v info term
+
+let sell_term =
+  let doc = "Sell shares (market if no price, limit/stop if price provided)." in
+  let info = Cmd.info "sell" ~doc in
+  let term =
+    Term.(
+      ret
+        (let+ state = state_arg
+         and+ ticker = ticker_arg
+         and+ qty = qty_arg
+         and+ price = price_arg in
+         place_order ~state ~ticker ~qty ~price_opt:price ~side:Order.Sell
+         |> to_cmdliner))
+  in
+  Cmd.v info term
 
 let default_cmd =
-  let doc = "A small stock trading simulation game (placeholder CLI)." in
-  let man = [
-    `S "DESCRIPTION";
-    `P "This command-line interface exposes subcommands like \
-        $(b,buy), $(b,sell), $(b,portfolio), $(b,tick), and $(b,simulate).";
-    `P "At this stage, all commands only print what they would do \
-        once the engine and models are fully implemented.";
-  ] in
-  let info = Cmd.info "pixel_portfolio" ~version:"0.1" ~doc ~man in
+  let doc = "Pixel Portfolio stochastic market simulator (interactive + CLI)." in
+  let info = Cmd.info "pixel_portfolio" ~doc in
   Cmd.group info
-    [ buy_term;
-      sell_term;
-      portfolio_term;
-      tick_term;
-      simulate_term;
-      save_term;
+    [ new_term;
       load_term;
-    ]
+      save_term;
+      portfolio_term;
+      simulate_term;
+      buy_term;
+      sell_term ]
+
+let run_cmd tokens =
+  (* Forward a parsed line into Cmdliner command evaluation *)
+  let argv = Array.of_list ("pixel_portfolio" :: tokens) in
+  match Cmd.eval_value ~catch:false ~argv default_cmd with
+  | Ok (`Ok ()) -> true
+  | Ok `Help -> true
+  | Ok `Version -> true
+  | Error _ -> false
+
+let rec repl () =
+  printf "> %!";
+  match In_channel.input_line In_channel.stdin with
+  | None -> ()
+  | Some line ->
+      let tokens = split_input line in
+      (match tokens with
+       | [] -> repl ()
+       | ("exit" :: _ | "quit" :: _) -> ()
+       | ["help"] ->
+           print_help ();
+           repl ()
+       | _ ->
+           ignore (run_cmd tokens);
+           repl ())
+
+let start_initial_engine () =
+  print_welcome ();
+  let has_save = Stdlib.Sys.file_exists default_state_file in
+  let start_new =
+    if has_save then
+      ask_yes_no ~default:false
+        "Start new game?"
+    else (
+      printf "No saved game found.\n%!";
+      true)
+  in
+  if start_new then (
+    printf "Starting a new game (this will overwrite %s).\n%!"
+      default_state_file;
+    let mode = prompt_difficulty () in
+    Or_error.ok_exn (new_game ~state:default_state_file ~mode))
+  else (
+    match load_engine ~state:default_state_file with
+    | Ok eng ->
+        printf "Loaded existing game from %s\n%!" default_state_file;
+        print_positions eng;
+        print_prices eng;
+        eng
+    | Error err ->
+        eprintf "Failed to load existing game (%s). Starting new instead.\n%!"
+          (Error.to_string_hum err);
+        let mode = prompt_difficulty () in
+        Or_error.ok_exn (new_game ~state:default_state_file ~mode))
 
 let () =
-  exit (Cmd.eval default_cmd)
+  ignore (start_initial_engine ());
+  printf "\n";
+  print_help ();
+  printf "\n";
+  repl ()
+

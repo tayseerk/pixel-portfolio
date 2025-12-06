@@ -1,0 +1,42 @@
+# Dune build outputs
+/_build/
+/dune-workspace.local
+*.install
+.merlin
+.merlin-shared
+
+# OCaml build artifacts
+*.cmi
+*.cmx
+*.cmo
+*.cmti
+*.cmt
+*.cmxa
+*.cmxs
+*.cma
+*.a
+*.o
+*.annot
+*.byte
+*.native
+*.so
+*.dll
+*.exe
+
+# Editor/OS noise
+*~
+.#*
+\#*#
+*.swp
+*.swo
+.DS_Store
+.idea/
+.vscode/
+
+# Local game state / backups
+/game.sexp
+/game.sexp.bak
+*.sexp
+*.bak
+*.log
+

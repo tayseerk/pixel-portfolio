@@ -14,6 +14,7 @@ type t = {
   portfolio : Portfolio.t;
   open_orders : Order.t list;
 }
+[@@deriving sexp]
 
 let random_state = Random.State.make [| 0x5eed_cafe |]
 
@@ -39,6 +40,14 @@ let with_prices t prices = { t with prices }
 let open_orders t = t.open_orders
 let add_open_order t order = { t with open_orders = order :: t.open_orders }
 let clear_open_orders t = { t with open_orders = [] }
+
+let should_fill_limit order ~current_price =
+  match order.Order.kind with
+  | Market -> true
+  | Limit limit_price ->
+      (match order.Order.type_of_order with
+       | Order.Buy -> current_price <= limit_price
+       | Order.Sell -> current_price >= limit_price)
 
 let apply_execution t execution =
   let order = execution.Order.order in
@@ -72,12 +81,44 @@ let submit_order t ~order =
            let t' = apply_execution t_after exec in
            (t', Some exec))
   | Order.Limit _ ->
-      (* For now, we don't simulate matching logic: keep as open, no execution. *)
-      let t' = add_open_order t order in
-      (t', None)
+      (match Map.find t.prices order.Order.ticker with
+       | Some current_price when should_fill_limit order ~current_price ->
+           let filled_order = Order.order_filled order in
+           let exec : Order.execution = { order = filled_order; fill_price = current_price } in
+           let t_after = add_open_order t filled_order in
+           let t' = apply_execution t_after exec in
+           (t', Some exec)
+       | _ ->
+           let t' = add_open_order t order in
+           (t', None))
+
+let process_open_orders t =
+  let rec loop t pending orders =
+    match orders with
+    | [] -> { t with open_orders = List.rev pending }
+    | order :: rest ->
+        (match order.Order.kind with
+         | Order.Market ->
+             (* Should not generally remain in open_orders, but keep as pending to avoid loss. *)
+             loop t (order :: pending) rest
+         | Limit _ ->
+             (match Map.find t.prices order.Order.ticker with
+              | None ->
+                  loop t (order :: pending) rest
+              | Some current_price ->
+                  if should_fill_limit order ~current_price then
+                    let filled_order = Order.order_filled order in
+                    let exec : Order.execution = { order = filled_order; fill_price = current_price } in
+                    let t = apply_execution t exec in
+                    loop t pending rest
+                  else
+                    loop t (order :: pending) rest))
+  in
+  loop t [] t.open_orders
 
 let sample_noise () =
-  Random.State.float random_state 2.0 -. 1.0
+  (* smaller noise magnitude to avoid unrealistic daily swings *)
+  (Random.State.float random_state 0.4 -. 0.2)
 
 let ensure_noise_map t noise =
   Map.fold t.config.universe ~init:noise ~f:(fun ~key ~data:_ acc ->
@@ -89,17 +130,29 @@ let tick t ~noise =
     Model.step_universe t.config.universe
       ~current_prices:t.prices ~noises:noise
   in
-  { t with
-    time_index = t.time_index + 1;
-    prices = new_prices;
-  }
+  let updated =
+    { t with
+      time_index = t.time_index + 1;
+      prices = new_prices;
+    }
+  in
+  process_open_orders updated
 
 let equity t =
   Portfolio.equity ~prices:t.prices t.portfolio
 
 let level t =
-  (* still just based on time for now. *)
-  if t.time_index < 5 then 1
-  else if t.time_index < 10 then 2
-  else 3
+  let base_cash = Money.cents_to_float_dollars t.config.initial_cash in
+  let current = Money.cents_to_float_dollars (equity t) in
+  if Float.(current <= base_cash) then 1
+  else
+    let percent_gain = (current -. base_cash) /. base_cash in
+    let steps =
+      percent_gain /. 0.05
+      |> Float.round_down
+      |> Int.of_float
+    in
+    Int.max 1 (1 + steps)
+
+let reconcile_open_orders t = process_open_orders t
 
