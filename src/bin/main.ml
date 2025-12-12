@@ -185,32 +185,6 @@ let ensure_can_afford_buy ~engine ~ticker ~qty ~price_cents =
   else
     return ()
 
-(* Function: block sells when there is no/insufficient long position *)
-let ensure_can_sell ~engine ~ticker ~qty =
-  let open Or_error.Let_syntax in
-  match
-    Portfolio.position_for (Engine.portfolio engine) (Ticker.of_string ticker)
-  with
-  | None ->
-      Or_error.errorf
-        "Cannot sell: you need an existing position in %s before selling."
-        ticker
-  | Some pos -> (
-      match pos.Portfolio.direction with
-      | Portfolio.Long ->
-          if qty > pos.quantity then
-            Or_error.errorf
-              "Cannot sell %d share(s) of %s; you only have %d."
-              qty ticker pos.quantity
-          else
-            Or_error.return ()
-      | Portfolio.Short ->
-          (* Disallow increasing a short when user has no long shares to sell *)
-          Or_error.errorf
-            "Cannot sell: %s is already a short position; cover with a buy \
-             instead."
-            ticker )
-
 
 (* Function: build order, save state, and report status *)
 let place_order ~state ~ticker ~qty ~price_opt ~side =
@@ -231,7 +205,7 @@ let place_order ~state ~ticker ~qty ~price_opt ~side =
         | Some px ->
             ensure_can_afford_buy ~engine ~ticker ~qty ~price_cents:px)
     | Order.Sell, _ ->
-        ensure_can_sell ~engine ~ticker ~qty
+        Or_error.return ()
   in
   let order =
     match (side, limit_or_stop) with
