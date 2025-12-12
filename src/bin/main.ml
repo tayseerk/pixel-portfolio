@@ -185,40 +185,69 @@ let ensure_can_afford_buy ~engine ~ticker ~qty ~price_cents =
   else
     return ()
 
+let ensure_can_sell ~engine ~ticker ~qty =
+  (* ticker is a string like "AAPL" *)
+  let open Or_error.Let_syntax in
+  let portfolio = Engine.portfolio engine in
+  match Portfolio.position_for portfolio (Ticker.of_string ticker) with
+  | None ->
+      Or_error.errorf
+        "Cannot sell %d share(s) of %s: no open position."
+        qty ticker
+  | Some pos ->
+      (* Disallow overselling and disallow selling into/expanding shorts. *)
+      (match pos.Portfolio.direction with
+       | Portfolio.Short ->
+           Or_error.errorf
+             "Cannot place a SELL order on an existing short position in %s. Use BUY to cover."
+             ticker
+       | Portfolio.Long ->
+           if qty > pos.Portfolio.quantity then
+             Or_error.errorf
+               "Cannot sell %d share(s) of %s: only %d share(s) available."
+               qty ticker pos.Portfolio.quantity
+           else
+             return ())
 
 (* Function: build order, save state, and report status *)
 let place_order ~state ~ticker ~qty ~price_opt ~side =
+  (* Create market/limit/stop-loss order, persist state, and print status *)
   let open Or_error.Let_syntax in
-  let ticker_sym = Ticker.of_string ticker in
+  let ticker_sym = ticker in                 (* string, e.g. "AAPL" *)
+  let ticker_t = Ticker.of_string ticker_sym in  (* Ticker.t *)
   let%bind () = qty_must_be_positive qty in
   let%bind limit_or_stop = price_arg_to_cents price_opt in
   let%bind engine = load_engine ~state in
-  (* Margin check for buys (when user inputs a price) *)
+  (* Margin / consistency checks before order creation *)
   let%bind () =
     match (side, limit_or_stop) with
     | Order.Buy, Some px ->
-        ensure_can_afford_buy ~engine ~ticker ~qty ~price_cents:px
+        ensure_can_afford_buy ~engine ~ticker:ticker_sym ~qty ~price_cents:px
     | Order.Buy, None -> (
-        match Map.find (Engine.prices engine) ticker with
+        match Map.find (Engine.prices engine) ticker_sym with
         | None ->
-            Or_error.errorf "No price available for ticker %s" ticker
+            Or_error.errorf "No price available for ticker %s" ticker_sym
         | Some px ->
-            ensure_can_afford_buy ~engine ~ticker ~qty ~price_cents:px)
+            ensure_can_afford_buy ~engine ~ticker:ticker_sym ~qty ~price_cents:px)
     | Order.Sell, _ ->
-        Or_error.return ()
+        (* Selling requires an existing long position and not overselling. *)
+        ensure_can_sell ~engine ~ticker:ticker_sym ~qty
   in
   let order =
     match (side, limit_or_stop) with
     | _, None ->
         (* Market order *)
-        Order.create_market ~ticker:ticker_sym ~type_of_order:side ~quantity:qty ?id:None
+        Order.create_market
+          ~ticker:ticker_t ~type_of_order:side ~quantity:qty ?id:None
     | Order.Buy, Some px ->
         (* Limit buy *)
-        Order.create_limit ~ticker:ticker_sym ~type_of_order:side ~quantity:qty
+        Order.create_limit
+          ~ticker:ticker_t ~type_of_order:side ~quantity:qty
           ~limit_price:px ?id:None
     | Order.Sell, Some px ->
         (* Stop-loss sell: triggers when price <= px (price value) *)
-        Order.create_stop_loss ~ticker:ticker_sym ~type_of_order:side ~quantity:qty
+        Order.create_stop_loss
+          ~ticker:ticker_t ~type_of_order:side ~quantity:qty
           ~stop_price:px ?id:None
   in
   let engine', exec_opt = Engine.submit_order engine ~order in
@@ -343,7 +372,7 @@ let print_help () =
     default_state_file;
   printf "  save <file> [state]              Save current state to file.\n";
   printf "  portfolio [state]                Show cash, equity, positions, open orders.\n";
-  printf "  buy <ticker> <qty> [price] [state]    Market or limit buy.\n";
+  printf "  buy <ticker> <qty> [state]       Market buy.\n";
   printf "  sell <ticker> <qty> [price] [state]   Market or stop/limit sell.\n";
   printf "  cancel <id> [state]             Cancel an open order.\n";
   printf "  simulate [steps] [state]         Run N steps (default 1).\n";
@@ -514,16 +543,15 @@ let simulate_term =
 
 (* Value: Cmdliner command to place buy orders *)
 let buy_term =
-  let doc = "Buy shares (market if no price, limit/stop if price provided)." in
+  let doc = "Buy shares at the current market price." in
   let info = Cmd.info "buy" ~doc in
   let term =
     Term.(
       ret
         (let+ state = state_arg
          and+ ticker = ticker_arg
-         and+ qty = qty_arg
-         and+ price = price_arg in
-         place_order ~state ~ticker ~qty ~price_opt:price ~side:Order.Buy
+         and+ qty = qty_arg in
+         place_order ~state ~ticker ~qty ~price_opt:None ~side:Order.Buy
          |> to_cmdliner))
   in
   Cmd.v info term
