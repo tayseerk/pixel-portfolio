@@ -29,10 +29,10 @@ val create :
 (* Function: step one OU step given current price and noise *)
 val step : t -> price:float -> noise:float -> float
 
-(* Function: simulate OU path over provided noises *)
+(* simulate OU path over provided noises *)
 val simulate_path :
   t ->
   initial_state:float ->
-  noises:float array ->
-  float array
+  noises:float list ->
+  float list
 

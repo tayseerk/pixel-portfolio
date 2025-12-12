@@ -23,10 +23,10 @@ val create : mu:float -> sigma:float -> ?dt:float -> t
 (* Function: one-step GBM update given price and noise *)
 val step : t -> price:float -> noise:float -> float
 
-(* Function: simulate a GBM path over provided noises *)
+(* Function: simulate a GBM path over provided noises (list-based) *)
 val simulate_path :
   t ->
   initial_price:float ->
-  noises:float array ->
-  float array
+  noises:float list ->
+  float list
 

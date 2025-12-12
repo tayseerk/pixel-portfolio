@@ -41,14 +41,11 @@ let step t ~price ~noise =
 
 (* Function: simulate a path over a sequence of noises *)
 let simulate_path model ~initial_state ~noises =
-  let len = Array.length noises in
-  let path = Array.create ~len initial_state in
-  let current = ref initial_state in
-  for i = 0 to len - 1 do
-    let next = step model ~price:!current ~noise:noises.(i) in
-    path.(i) <- next;
-    current := next
-  done;
-  path
+  let _, reversed_path =
+    List.fold_left noises ~init:(initial_state, []) ~f:(fun (current, acc) noise ->
+        let next = step model ~price:current ~noise in
+        (next, next :: acc))
+  in
+  List.rev reversed_path
 
 

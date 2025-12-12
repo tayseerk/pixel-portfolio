@@ -38,16 +38,12 @@ let step t ~price ~noise =
   ensure_positive next_price
 
 (* Function: simulate a price path over a sequence of noises *)
-(* uses array of noises to simulate a price path *)
 let simulate_path model ~initial_price ~noises =
-  let len = Array.length noises in
-  let path = Array.create ~len initial_price in
-  let current = ref initial_price in
-  for i = 0 to len - 1 do
-    let next = step model ~price:!current ~noise:noises.(i) in
-    path.(i) <- next;
-    current := next
-  done;
-  path
+  let _, reversed_path =
+    List.fold_left noises ~init:(initial_price, []) ~f:(fun (current, acc) noise ->
+        let next = step model ~price:current ~noise in
+        (next, next :: acc))
+  in
+  List.rev reversed_path
 
 
