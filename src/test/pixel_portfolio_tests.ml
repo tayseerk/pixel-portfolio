@@ -9,7 +9,7 @@ let test_gbm_step_positive_and_capped _ =
   let noise = 5.0 in
   let next = Gbm.step m ~price ~noise in
   assert_bool "Positive" Float.(next > 0.0);
-  assert_bool "Capped up to ~20%" Float.(next <= 122.2 +. 1e-6);
+  assert_bool "Capped up to ~8%" Float.(next <= 108.4 +. 1e-6);
   let noise_down = -5.0 in
   let next_down = Gbm.step m ~price ~noise:noise_down in
   assert_bool "Capped down to ~80%" Float.(next_down >= 80.0 -. 1e-6)
@@ -18,17 +18,17 @@ let test_ou_step_positive_and_capped _ =
   let m = Ou.create ~kappa:0.5 ~theta:1.0 ~sigma:0.5 ~dt:1.0 in
   let state = 10.0 in
   let noise = 5.0 in
-  let next = Ou.step m ~state ~noise in
+  let next = Ou.step m ~price:state ~noise in
   assert_bool "Positive" Float.(next > 0.0);
-  assert_bool "Capped delta" Float.(next <= state *. 1.2 +. 1e-6);
+  assert_bool "Capped delta" Float.(next <= state *. 1.4 +. 1e-6);
   let noise_down = -5.0 in
-  let next_down = Ou.step m ~state ~noise:noise_down in
-  assert_bool "Capped delta down" Float.(next_down >= state *. 0.8 -. 1e-6)
+  let next_down = Ou.step m ~price:state ~noise:noise_down in
+  assert_bool "Capped delta down" Float.(next_down >= state *. 0.6 -. 1e-6)
 
 let test_model_step_universe_initial_price_and_noise _ =
   let asset =
     {
-      Model.ticker = "AAPL";
+      Model.ticker = Ticker.of_string "AAPL";
       process = Model.GBM (Gbm.create ~mu:0.0 ~sigma:0.0 ~dt:1.0);
       initial_price = Money.float_dollars_to_cents 10.0;
     }
@@ -53,18 +53,19 @@ let test_portfolio_buy_sell _ =
   in
   let initial_port = Engine.portfolio engine in
   let order_buy =
-    Order.create_market ~ticker:"AAPL" ~type_of_order:Order.Buy ~quantity:5 ?id:None
+    Order.create_market ~ticker:(Ticker.of_string "AAPL") ~type_of_order:Order.Buy ~quantity:5 ?id:None
   in
   let eng_after_buy, _ = Engine.submit_order engine ~order:order_buy in
   let port = Engine.portfolio eng_after_buy in
-  assert_bool "Cash decreased" (port.cash < initial_port.cash);
+  assert_bool "Cash decreased" (Money.compare port.cash initial_port.cash < 0);
   let order_sell =
-    Order.create_market ~ticker:"AAPL" ~type_of_order:Order.Sell ~quantity:5 ?id:None
+    Order.create_market ~ticker:(Ticker.of_string "AAPL") ~type_of_order:Order.Sell ~quantity:5 ?id:None
   in
   let eng_after_sell, _ = Engine.submit_order eng_after_buy ~order:order_sell in
   let port2 = Engine.portfolio eng_after_sell in
   assert_bool "Position removed"
-    (Option.is_none (Portfolio.position_for port2 "AAPL"))
+    (Option.is_none (Portfolio.position_for port2 (Ticker.of_string "AAPL")))
+
 
 let test_limit_order_not_filled_until_price_hits _ =
   let px = Money.float_dollars_to_cents 100.0 in
@@ -77,7 +78,7 @@ let test_limit_order_not_filled_until_price_hits _ =
       }
   in
   let order_limit =
-    Order.create_limit ~ticker:"AAPL" ~type_of_order:Order.Buy ~quantity:1
+    Order.create_limit ~ticker:(Ticker.of_string "AAPL") ~type_of_order:Order.Buy ~quantity:1
       ~limit_price:(Money.float_dollars_to_cents 90.0) ?id:None
   in
   let eng_after, exec = Engine.submit_order engine ~order:order_limit in
@@ -101,7 +102,7 @@ let test_sell_no_position _ =
       }
   in
   let order_sell =
-    Order.create_market ~ticker:"AAPL" ~type_of_order:Order.Sell ~quantity:1 ?id:None
+    Order.create_market ~ticker:(Ticker.of_string "AAPL") ~type_of_order:Order.Sell ~quantity:1 ?id:None
   in
   let eng_after, _ = Engine.submit_order engine ~order:order_sell in
   let port = Engine.portfolio eng_after in
@@ -132,7 +133,7 @@ let test_reconcile_idempotent _ =
       }
   in
   let order_limit =
-    Order.create_limit ~ticker:"AAPL" ~type_of_order:Order.Buy ~quantity:1
+    Order.create_limit ~ticker:(Ticker.of_string "AAPL") ~type_of_order:Order.Buy ~quantity:1
       ~limit_price:(Money.float_dollars_to_cents 90.0) ?id:None
   in
   let eng_after, _ = Engine.submit_order engine ~order:order_limit in
@@ -158,10 +159,11 @@ let test_save_load_roundtrip _ =
   | Ok eng' ->
       assert_equal (Engine.time_index engine) (Engine.time_index eng');
       assert_bool "Prices equal"
-        (Map.equal Int.equal (Engine.prices engine) (Engine.prices eng'));
+        (Map.equal (fun x y -> Money.compare x y = 0)
+          (Engine.prices engine)
+          (Engine.prices eng'));
       assert_equal (Engine.portfolio engine).cash (Engine.portfolio eng').cash
   | Error msg -> assert_failure msg
-
 
 let qcheck_gbm_positive_capped =
   Test.make
@@ -170,7 +172,7 @@ let qcheck_gbm_positive_capped =
        let m = Gbm.create ~mu:0.1 ~sigma:0.5 ~dt:1.0 in
        let price = 100.0 in
        let next = Gbm.step m ~price ~noise in
-       let upper = price *. Float.exp 0.2 +. 1e-6 in
+       let upper = price *. Float.exp 0.08 +. 1e-6 in
        Float.(next > 0.0 && next <= upper))
 
 
@@ -179,8 +181,8 @@ let qcheck_ou_positive_capped =
     (pair (float_range 1. 20.) (float_range (-5.) 5.))
     (fun (state, noise) ->
        let m = Ou.create ~kappa:0.5 ~theta:1.0 ~sigma:0.5 ~dt:1.0 in
-       let next = Ou.step m ~state ~noise in
-       let max_step = 0.2 *. state in
+       let next = Ou.step m ~price:state ~noise in
+       let max_step = 0.4 *. state in
        let upper = state +. max_step +. 1e-6 in
        let lower = state -. max_step -. 1e-6 in
        Float.(next > 0.0 && next <= upper && next >= lower))

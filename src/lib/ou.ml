@@ -20,26 +20,26 @@ let ensure_positive state =
   (* keep the simulated state strictly positive to avoid negative prices *)
   Float.max state min_state
 
-let step t ~state ~noise =
-  let mean_revert = t.kappa *. (t.theta -. state) *. t.dt in
+let step t ~price ~noise =
+  let mean_revert = t.kappa *. (t.theta -. price) *. t.dt in
   let diffusion = t.sigma *. Float.sqrt t.dt *. noise in
   let delta = mean_revert +. diffusion in
-  (* cap move to +/-20% of current state to keep daily swings realistic *)
-  let max_step = 0.2 *. state in
+  (* allow sharper spikes: cap move to +/-40% of current price *)
+  let max_step = 0.4 *. price in
   let capped_delta =
     delta
     |> Float.min max_step
     |> Float.max (-.max_step)
   in
-  let next_state = state +. capped_delta in
-  ensure_positive next_state
+  let next_price = price +. capped_delta in
+  ensure_positive next_price
 
 let simulate_path model ~initial_state ~noises =
   let len = Array.length noises in
   let path = Array.create ~len initial_state in
   let current = ref initial_state in
   for i = 0 to len - 1 do
-    let next = step model ~state:!current ~noise:noises.(i) in
+    let next = step model ~price:!current ~noise:noises.(i) in
     path.(i) <- next;
     current := next
   done;

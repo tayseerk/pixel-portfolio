@@ -57,8 +57,8 @@ let equity t =
 (*new one*)
 let compute_level config ~equity_cents =
   (* Base equity in dollars at level 1 *)
-  let base_cash = Money.cents_to_float_dollars config.initial_cash in
-  let current = Money.cents_to_float_dollars equity_cents in
+  let base_cash = Money.to_float_dollars config.initial_cash in
+  let current = Money.to_float_dollars equity_cents in
   (* No level-ups if you're at or below starting cash *)
   if Float.(current <= base_cash) then 1
   else
@@ -66,17 +66,17 @@ let compute_level config ~equity_cents =
     (* percent_gain is e.g. 0.05 for +5%, 0.45 for +45%, etc. *)
     let rec loop level acc =
       let next_level = level + 1 in
-      (* for band index: 1 for levels 1–10, 2 for 11–20, 3 for 21–30, etc *)
+      (* band_index: 1 for levels 1–10, 2 for 11–20, etc. *)
       let band_index = ((next_level - 1) / 10) + 1 in
       let step_gain = 0.05 *. Float.of_int band_index in
       let next_acc = acc +. step_gain in
       if Float.(percent_gain < next_acc) then
         level
       else
-        (* We have enough gain to reach [next_level]; keep climbing. *)
         loop next_level next_acc
     in
     loop 1 0.0
+
 (*new one*)
 let update_level t =
   let eq = equity t in
@@ -89,17 +89,18 @@ let should_fill_limit order ~current_price =
   | Market -> true
   | Limit limit_price ->
       (match order.Order.type_of_order with
-       | Order.Buy -> current_price <= limit_price
-       | Order.Sell -> current_price >= limit_price)
+       | Order.Buy -> Money.compare current_price limit_price <= 0
+       | Order.Sell -> Money.compare current_price limit_price >= 0)
   | Stop_loss _ -> false
 
 let should_trigger_stop_loss order ~current_price =
   match order.Order.kind with
   | Stop_loss stop_price ->
       (match order.Order.type_of_order with
-       | Order.Buy -> current_price >= stop_price
-       | Order.Sell -> current_price <= stop_price)
+       | Order.Buy -> Money.compare current_price stop_price >= 0
+       | Order.Sell -> Money.compare current_price stop_price <= 0)
   | _ -> false
+
 
 let apply_execution t execution =
   let open Money in
@@ -112,7 +113,7 @@ let apply_execution t execution =
   match order.Order.type_of_order with
   | Order.Buy ->
       (* Enforce non-negative cash: if we can't afford it, cancel instead. *)
-      if cost > t.portfolio.Portfolio.cash then
+      if Money.compare cost t.portfolio.Portfolio.cash > 0 then
         let _cancelled = Order.order_cancelled order in
         { t with open_orders = remaining_open }
       else
@@ -141,7 +142,7 @@ let submit_order t ~order =
   match order.Order.kind with
   | Order.Market ->
       (* Immediately fill a market order at the current price if available. *)
-      (match Map.find t.prices order.Order.ticker with
+      (match Map.find t.prices (Ticker.to_string order.Order.ticker) with
        | None ->
            (* No price for this ticker: just record as open, no execution. *)
            let t' = add_open_order t order in
@@ -153,7 +154,7 @@ let submit_order t ~order =
            let t' = apply_execution t_after exec in
            (t', Some exec))
   | Order.Limit _ ->
-      (match Map.find t.prices order.Order.ticker with
+      (match Map.find t.prices (Ticker.to_string order.Order.ticker) with
        | Some current_price when should_fill_limit order ~current_price ->
            let filled_order = Order.order_filled order in
            let exec : Order.execution =
@@ -181,7 +182,7 @@ let process_open_orders t =
             (* Should not generally remain in open_orders, but keep as pending to avoid loss. *)
             loop t (order :: pending) rest
         | Limit _ -> (
-            match Map.find t.prices order.Order.ticker with
+            match Map.find t.prices (Ticker.to_string order.Order.ticker) with
             | None ->
                 loop t (order :: pending) rest
             | Some current_price ->
@@ -195,7 +196,7 @@ let process_open_orders t =
                 else
                   loop t (order :: pending) rest)
         | Stop_loss _ -> (
-            match Map.find t.prices order.Order.ticker with
+            match Map.find t.prices (Ticker.to_string order.Order.ticker) with
             | None ->
                 loop t (order :: pending) rest
             | Some current_price ->

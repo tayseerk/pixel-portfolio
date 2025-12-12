@@ -3,68 +3,22 @@ open Cmdliner
 open Cmdliner.Term.Syntax
 open Pixel_portfolio_lib
 
+module Difficulty = Game_config
+
 (* ----- Game configuration ----- *)
 
-type difficulty =
-  | Easy
-  | Medium
-  | Hard
-
-(* Map difficulty to starting cash *)
-let difficulty_to_cash = function
-  | Easy -> Money.float_dollars_to_cents 100_000.0
-  | Medium -> Money.float_dollars_to_cents 25_000.0
-  | Hard -> Money.float_dollars_to_cents 5_000.0
-
-let default_state_file = "game.sexp"
-
+let default_state_file = Game_config.default_state_file
 let max_sim_steps = 160
-
-(* Dollar helper *)
-let cents_of_dollars dollars = Money.float_dollars_to_cents dollars
-
-(* Build a GBM asset *)
-let mk_gbm_asset ticker ~price ~mu ~sigma =
-  let process = Model.GBM (Gbm.create ~mu ~sigma ~dt:1.0) in
-  { Model.ticker; process; initial_price = cents_of_dollars price }
-
-(* Build an OU asset *)
-let mk_ou_asset ticker ~price ~kappa ~theta ~sigma =
-  let process = Model.OU (Ou.create ~kappa ~theta ~sigma ~dt:1.0) in
-  { Model.ticker; process; initial_price = cents_of_dollars price }
-
-let base_universe =
-  (* Default universe of tickers with GBM/OU processes *)
-  let trending =
-    [
-      mk_gbm_asset "AAPL" ~price:195.0 ~mu:0.12 ~sigma:0.25;
-      mk_gbm_asset "AMZN" ~price:140.0 ~mu:0.11 ~sigma:0.30;
-      mk_gbm_asset "GOOG" ~price:125.0 ~mu:0.10 ~sigma:0.22;
-      mk_gbm_asset "NVDA" ~price:450.0 ~mu:0.18 ~sigma:0.55;
-      mk_gbm_asset "PLTR" ~price:18.5 ~mu:0.20 ~sigma:0.40;
-    ]
-  and penny =
-    [
-      mk_ou_asset "DKSC" ~price:1.20 ~kappa:1.6 ~theta:1.10 ~sigma:0.35;
-      mk_ou_asset "RNWF" ~price:0.80 ~kappa:1.4 ~theta:0.75 ~sigma:0.40;
-      mk_ou_asset "BCEKF" ~price:1.90 ~kappa:1.2 ~theta:1.85 ~sigma:0.25;
-      mk_ou_asset "SVRSF" ~price:1.05 ~kappa:1.3 ~theta:1.0 ~sigma:0.30;
-      mk_ou_asset "T1E" ~price:2.50 ~kappa:0.9 ~theta:2.4 ~sigma:0.18;
-    ]
-  in
-  List.append trending penny
-  |> List.fold ~init:Model.empty_universe ~f:Model.add_asset
-
 let create_engine difficulty =
-  (* Build engine config from difficulty and universe *)
   let config =
     {
-      Engine.universe = base_universe;
+      Engine.universe = Game_config.base_universe;
       initial_prices = String.Map.empty;
-      initial_cash = difficulty_to_cash difficulty;
+      initial_cash = Game_config.starting_cash difficulty;
     }
   in
   Engine.create config
+
 
 (* ----- IO helpers ----- *)
 
@@ -124,18 +78,18 @@ let print_prices engine =
         Map.find reference ticker
         |> Option.value ~default:price
       in
-      let delta = price - ref_price in
+      let delta = Money.(price $- ref_price) in
       let pct =
-        if ref_price = 0 then 0.0
+        if Money.to_int_cents ref_price = 0 then 0.0
         else
-          let d = Money.cents_to_float_dollars delta in
-          let r = Money.cents_to_float_dollars ref_price in
+          let d = Money.to_float_dollars delta in
+          let r = Money.to_float_dollars ref_price in
           (d /. r) *. 100.0
       in
       printf "  %s: $%s (%s%s, %.2f%%)\n"
         ticker
         (pretty_money price)
-        (if delta >= 0 then "+" else "")
+        (if Money.to_int_cents delta >= 0 then "+" else "")
         (pretty_money delta)
         pct);
   printf "%!"
@@ -197,7 +151,7 @@ let price_arg_to_cents = function
       if Float.(dollars <= 0.) then
         Or_error.errorf "Price must be positive, got %f" dollars
       else
-        Or_error.return (Some (Money.float_dollars_to_cents dollars))
+        Or_error.return (Some (Money.of_float_dollars dollars))
 
 (* Quantity must be positive *)
 let qty_must_be_positive qty =
@@ -209,7 +163,7 @@ let ensure_can_afford_buy ~engine ~ticker ~qty ~price_cents =
   let open Money in
   let cost = multiply price_cents qty in
   let cash = (Engine.portfolio engine).Portfolio.cash in
-  if cost > cash then
+  if compare cost cash > 0 then
     Or_error.errorf
       "Insufficient cash to buy %d share(s) of %s: need $%s but only have $%s"
       qty
@@ -219,9 +173,11 @@ let ensure_can_afford_buy ~engine ~ticker ~qty ~price_cents =
   else
     return ()
 
+
 let place_order ~state ~ticker ~qty ~price_opt ~side =
   (* Create market/limit/stop-loss order, persist state, and print status *)
   let open Or_error.Let_syntax in
+  let ticker_sym = Ticker.of_string ticker in
   let%bind () = qty_must_be_positive qty in
   let%bind limit_or_stop = price_arg_to_cents price_opt in
   let%bind engine = load_engine ~state in
@@ -243,14 +199,14 @@ let place_order ~state ~ticker ~qty ~price_opt ~side =
     match (side, limit_or_stop) with
     | _, None ->
         (* Market order *)
-        Order.create_market ~ticker ~type_of_order:side ~quantity:qty ?id:None
+        Order.create_market ~ticker:ticker_sym ~type_of_order:side ~quantity:qty ?id:None
     | Order.Buy, Some px ->
         (* Limit buy *)
-        Order.create_limit ~ticker ~type_of_order:side ~quantity:qty
+        Order.create_limit ~ticker:ticker_sym ~type_of_order:side ~quantity:qty
           ~limit_price:px ?id:None
     | Order.Sell, Some px ->
         (* Stop-loss sell: triggers when price <= px *)
-        Order.create_stop_loss ~ticker ~type_of_order:side ~quantity:qty
+        Order.create_stop_loss ~ticker:ticker_sym ~type_of_order:side ~quantity:qty
           ~stop_price:px ?id:None
   in
   let engine', exec_opt = Engine.submit_order engine ~order in
@@ -286,20 +242,21 @@ let simulate ~state ~steps =
       steps (Engine.time_index final_engine);
     let new_prices = Engine.prices final_engine in
     Map.merge old_prices new_prices ~f:(fun ~key:ticker -> function
-      | `Both (old_price, new_price) ->
-          let delta = new_price - old_price in
+        | `Both (old_price, new_price) ->
+          let delta = Money.(new_price $- old_price) in
           let pct =
-            if old_price = 0 then 0.0
+            if Money.to_int_cents old_price = 0 then 0.0
             else
-              let d = Money.cents_to_float_dollars delta in
-              let o = Money.cents_to_float_dollars old_price in
+              let d = Money.to_float_dollars delta in
+              let o = Money.to_float_dollars old_price in
               (d /. o) *. 100.0
+
           in
           printf "  %s: $%s -> $%s (%s%s, %.2f%%)\n"
             ticker
             (pretty_money old_price)
             (pretty_money new_price)
-            (if delta >= 0 then "+" else "")
+            (if Money.to_int_cents delta >= 0 then "+" else "")
             (pretty_money delta)
             pct;
           None
@@ -315,7 +272,7 @@ let new_game ~state ~mode =
   let engine = create_engine mode in
   let%bind () = save_engine ~state engine in
   printf "Started new %s game at %s.\n"
-    (match mode with Easy -> "easy" | Medium -> "medium" | Hard -> "hard")
+    (Game_config.to_string mode)
     state;
   print_positions engine;
   print_prices engine;
@@ -379,11 +336,7 @@ let print_help () =
   printf "  help                             Show this help.\n";
   printf "  exit                             Quit the game.\n%!"
 
-let parse_difficulty = function
-  | "easy" -> Some Easy
-  | "medium" -> Some Medium
-  | "hard" -> Some Hard
-  | _ -> None
+let parse_difficulty = Game_config.of_string
 
 let ask_yes_no ~default prompt =
   (* Simple yes/no stdin prompt with default *)
@@ -402,7 +355,7 @@ let rec prompt_difficulty () =
   (* Simple stdin prompt for difficulty selection *)
   printf "Choose difficulty (easy/medium/hard, default=easy): %!";
   match In_channel.input_line In_channel.stdin with
-  | None | Some "" -> Easy
+  | None | Some "" -> Difficulty.Easy
   | Some line ->
       let line = String.lowercase (String.strip line) in
       (match parse_difficulty line with
@@ -410,6 +363,7 @@ let rec prompt_difficulty () =
        | None ->
            printf "Unknown difficulty, please try again.\n%!";
            prompt_difficulty ())
+
 
 let split_input line =
   (* Tokenize a line on spaces/tabs *)
@@ -428,8 +382,15 @@ let state_arg =
 
 let mode_arg =
   let doc = "Difficulty: easy, medium, hard." in
-  Arg.(value & opt (enum [ ("easy", Easy); ("medium", Medium); ("hard", Hard) ]) Easy
-       & info [ "mode" ] ~docv:"MODE" ~doc)
+  let choices =
+    List.map Difficulty.all ~f:(fun d ->
+        (Difficulty.to_string d, d))
+  in
+  Arg.(
+    value
+    & opt (enum choices) Difficulty.Easy
+    & info [ "mode" ] ~docv:"MODE" ~doc
+  )
 
 let file_arg docv doc =
   Arg.(required & pos 0 (some string) None & info ~doc ~docv [])
@@ -564,7 +525,7 @@ let cancel_term =
          cancel_order_cmd ~state ~order_id:id |> to_cmdliner))
   in
   Cmd.v info term
-  
+
 let default_cmd =
   let doc = "Pixel Portfolio stochastic market simulator (interactive + CLI)." in
   let info = Cmd.info "pixel_portfolio" ~doc in

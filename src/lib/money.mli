@@ -1,34 +1,59 @@
-open Core
+(** Abstract money type *)
+type t
 
-(** balance converted to cents $10.23 -> 1023 *)
-type cents = int [@@deriving sexp, compare, hash]
+(** for backwards compatibility *)
+type cents = t
 
-(** to convert 10.23 to cents 1023, rounds to the nearest cent *)
-val float_dollars_to_cents : float -> cents
+(** S-expression helpers so other modules can derive sexp on [Money.cents] *)
+val cents_of_sexp : Sexplib0.Sexp.t -> cents
+val sexp_of_cents : cents -> Sexplib0.Sexp.t
 
-(** convert cents back to a dollar float *)
-val cents_to_float_dollars : cents -> float
+val compare_cents : cents -> cents -> int
 
-(** parse through a string i.e 10.23 (dollar float) and convert to cents *)
-val string_dollars : string -> (cents, string) Result.t
+(** Construct from integer cents, e.g. 1023 -> $10.23. *)
+val of_int_cents : int -> t
 
-(** add*)
-val addition : cents -> cents -> cents
+(** Extract raw cent amount. *)
+val to_int_cents : t -> int
 
-(** subtract *)
-val subtraction : cents -> cents -> cents
+(** Convert a dollar float (e.g. 10.23) to cents, rounding to nearest cent. *)
+val of_float_dollars : float -> t
 
-(** infix addition operator *)
-val ( $+ ) : cents -> cents -> cents
+(** Backwards-compatible helper name, used in tests. *)
+val float_dollars_to_cents : float -> t
 
-(** infix subtraction operator *)
-val ( $- ) : cents -> cents -> cents
+(** Convert a whole-dollar int (e.g. 10) to cents. *)
+val of_int_dollars : int -> t
 
-(** multiply *)
-val multiply : cents -> int -> cents
+(** Convert cents back to a dollar float. *)
+val to_float_dollars : t -> float
 
-(** turn back into a nice readable string *)
-val make_it_look_nice : cents -> string
+(** Add two Money values. *)
+val addition : t -> t -> t
+
+(** Subtract y from x. *)
+val subtraction : t -> t -> t
+
+(** Infix addition operator. *)
+val ( $+ ) : t -> t -> t
+
+(** Infix subtraction operator. *)
+val ( $- ) : t -> t -> t
+
+(** Multiply by an integer quantity (e.g. price * shares). *)
+val multiply : t -> int -> t
+
+(** Infix multiply operator. *)
+val ( $* ) : t -> int -> t
+
+(** Equality helper (Map.equal). *)
+val equal : t -> t -> bool
+
+val compare : t -> t -> int
+
+(** Turn into a nice human-readable dollar string, e.g. "-10.23". *)
+val make_it_look_nice : t -> string
+
 
 
 

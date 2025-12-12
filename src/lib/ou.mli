@@ -32,7 +32,7 @@ val create :
 
 
   (* move one dt step from curr given price, essentially one tick*)
-val step : t -> state:float -> noise:float -> float
+val step : t -> price:float -> noise:float -> float
 
 (** creates the path the price should move for one asset*)
 val simulate_path :

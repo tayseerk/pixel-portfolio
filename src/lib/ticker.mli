@@ -1,5 +1,7 @@
+open Core
+
 (* Stock/asset ticker symbol *)
-type t = string
+type t
 
 (* Sexp/compare/hash helpers *)
 val sexp_of_t : t -> Sexplib0.Sexp.t
@@ -14,4 +16,8 @@ val hash_fold_t :
 
 val of_string : string -> t
 val to_string : t -> string
+
+(** Map keyed by tickers. *)
+module Map : Map.S with type Key.t = t
+
 

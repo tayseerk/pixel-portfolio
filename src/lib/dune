@@ -3,4 +3,4 @@
  (public_name pixel_portfolio.lib)
  (libraries core yojson)
  (preprocess (pps ppx_jane))
-(modules ticker engine money gbm ou model order portfolio save_game_state noise))
+(modules ticker engine money gbm ou model order portfolio save_game_state noise game_config))

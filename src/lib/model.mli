@@ -35,6 +35,11 @@ val find_asset : universe -> Ticker.t -> asset option
 (* returning map from ticker for every asset with the prices in cent *)
 val initial_prices : universe -> Money.cents String.Map.t
 
+val price_to_float : Money.cents -> float
+val float_to_price : float -> Money.cents
+
+val evolve_price : asset -> Money.cents -> float option -> Money.cents
+
 (* Advancing all assets in the game by one time step *)
 val step_universe :
   universe ->
