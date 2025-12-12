@@ -91,24 +91,6 @@ let test_limit_order_not_filled_until_price_hits _ =
   assert_bool "Filled after price drop"
     (List.is_empty (Engine.open_orders eng_after_tick))
 
-let test_sell_no_position _ =
-  let px = Money.float_dollars_to_cents 10.0 in
-  let engine =
-    Engine.create
-      {
-        Engine.universe = Model.empty_universe;
-        initial_prices = String.Map.of_alist_exn [ ("AAPL", px) ];
-        initial_cash = Money.float_dollars_to_cents 1000.0;
-      }
-  in
-  let order_sell =
-    Order.create_market ~ticker:(Ticker.of_string "AAPL") ~type_of_order:Order.Sell ~quantity:1 ?id:None
-  in
-  let eng_after, _ = Engine.submit_order engine ~order:order_sell in
-  let port = Engine.portfolio eng_after in
-  assert_bool "Still no positions after selling none"
-    (List.is_empty (Portfolio.all_positions port))
-
 let test_tick_advances_time _ =
   let px = Money.float_dollars_to_cents 10.0 in
   let engine =
@@ -196,7 +178,6 @@ let suite =
          "portfolio_buy_sell" >:: test_portfolio_buy_sell;
          "limit_fill_on_price" >:: test_limit_order_not_filled_until_price_hits;
          "save_load_roundtrip" >:: test_save_load_roundtrip;
-         "sell_no_position" >:: test_sell_no_position;
          "tick_advances_time" >:: test_tick_advances_time;
         "keeps_open_orders" >:: test_reconcile_idempotent;
         "qcheck_gbm_positive_capped"

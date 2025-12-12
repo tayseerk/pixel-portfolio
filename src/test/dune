@@ -1,5 +1,6 @@
 (tests
  (names pixel_portfolio_tests)
  (libraries pixel_portfolio.lib core ounit2 qcheck)
- (preprocess (pps ppx_jane)))
+ (preprocess (pps ppx_jane))
+ (instrumentation (backend bisect_ppx)))
 
