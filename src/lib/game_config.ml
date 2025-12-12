@@ -1,23 +1,28 @@
 open Core
 
+(* Type: difficulty levels *)
 type difficulty =
   | Easy
   | Medium
   | Hard
 [@@deriving sexp, compare]
 
+(* Value: default save filename *)
 let default_state_file = "game.sexp"
 
+(* Function: initial cash per difficulty *)
 let starting_cash = function
   | Easy -> Money.of_float_dollars 100_000.0
   | Medium -> Money.of_float_dollars 25_000.0
   | Hard -> Money.of_float_dollars 5_000.0
 
+(* Function: convert difficulty to string *)
 let to_string = function
   | Easy -> "easy"
   | Medium -> "medium"
   | Hard -> "hard"
 
+(* Function: parse difficulty string *)
 let of_string s =
   match String.lowercase (String.strip s) with
   | "easy" -> Some Easy
@@ -25,21 +30,23 @@ let of_string s =
   | "hard" -> Some Hard
   | _ -> None
 
+(* Value: all difficulty values *)
 let all = [ Easy; Medium; Hard ]
 
-(* Helpers to construct assets. *)
+(* Function: build a GBM-modeled asset *)
 let mk_gbm_asset ticker_sym ~price ~mu ~sigma =
   let process = Model.GBM (Gbm.create ~mu ~sigma ~dt:1.0) in
   let ticker = Ticker.of_string ticker_sym in
   { Model.ticker; process; initial_price = Money.of_float_dollars price }
 
+(* Function: build an OU-modeled asset *)
 let mk_ou_asset ticker_sym ~price ~kappa ~theta ~sigma =
   let process = Model.OU (Ou.create ~kappa ~theta ~sigma ~dt:1.0) in
   let ticker = Ticker.of_string ticker_sym in
   { Model.ticker; process; initial_price = Money.of_float_dollars price }
 
+(* Value: base universe of GBM/OU assets *)
 let base_universe =
-  (* Default universe of tickers with GBM/OU processes. *)
     let trending =
     [
       mk_gbm_asset "AAPL" ~price:195.0 ~mu:0.05 ~sigma:0.18;

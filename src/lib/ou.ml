@@ -1,6 +1,7 @@
 [@@@warning "-16"]
 open Core
 
+(* Type: OU parameters (kappa, theta, sigma, timestep dt). *)
 type t = {
   kappa : float;
   theta : float;
@@ -9,17 +10,21 @@ type t = {
 }
 [@@deriving sexp]
 
+(* Function: construct an OU model, default dt=1.0 *)
 let create ~kappa ~theta ~sigma ?dt =
   let dt = Option.value dt ~default:1.0 in
   { kappa; theta; sigma; dt }
 
 
+(* Value: floor to keep state positive *)
 let min_state = 1e-6
 
+(* Function: clamp state to stay positive *)
 let ensure_positive state =
   (* keep the simulated state strictly positive to avoid negative prices *)
   Float.max state min_state
 
+(* Function: one OU step with capped move size *)
 let step t ~price ~noise =
   let mean_revert = t.kappa *. (t.theta -. price) *. t.dt in
   let diffusion = t.sigma *. Float.sqrt t.dt *. noise in
@@ -34,6 +39,7 @@ let step t ~price ~noise =
   let next_price = price +. capped_delta in
   ensure_positive next_price
 
+(* Function: simulate a path over a sequence of noises *)
 let simulate_path model ~initial_state ~noises =
   let len = Array.length noises in
   let path = Array.create ~len initial_state in

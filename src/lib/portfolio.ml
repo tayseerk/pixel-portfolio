@@ -1,10 +1,12 @@
 open Core
 
+(* Type: position orientation *)
 type direction =
   | Long
   | Short
 [@@deriving sexp, compare]
 
+(* Type: ticker holdings with avg cost and direction *)
 type position = {
   ticker : Ticker.t;
   quantity : int;
@@ -13,28 +15,34 @@ type position = {
 }
 [@@deriving sexp, fields]
 
+(* Type: cash and positions map *)
 type t = {
   cash : Money.cents;
   positions : position String.Map.t;
 }
 [@@deriving sexp]
 
+(* Value: empty portfolio *)
 let empty = { cash = Money.of_int_cents 0; positions = String.Map.empty }
 
+(* Function: create portfolio with initial cash *)
 let of_cash initial_cash = { cash = initial_cash; positions = String.Map.empty }
 
+(* Function: copy with new cash *)
 let with_cash t new_cash = { t with cash = new_cash }
 
+(* Function: find a position by ticker *)
 let position_for t ticker =
   Map.find t.positions (Ticker.to_string ticker)
 
+(* Function: update a position given fill side/qty/price; updates cash and positions *)
 let update_position t ~ticker ~side ~quantity ~fill_price =
   let open Money in
   let existing = position_for t ticker in
   match (side, existing) with
-  (* --- No existing position --- *)
+  (* No existing position *)
   | Order.Buy, None ->
-      (* Open new long. *)
+      (* Open new long *)
       let trade_cost = fill_price $* quantity in
       let new_cash = t.cash $- trade_cost in
       let pos =
@@ -43,7 +51,7 @@ let update_position t ~ticker ~side ~quantity ~fill_price =
       { cash = new_cash;
         positions = Map.set t.positions ~key:(Ticker.to_string ticker) ~data:pos }
   | Order.Sell, None ->
-      (* Open new short. *)
+      (* Open new short *)
       let proceeds = fill_price $* quantity in
       let new_cash = t.cash $+ proceeds in
       let pos =
@@ -52,11 +60,11 @@ let update_position t ~ticker ~side ~quantity ~fill_price =
       { cash = new_cash;
         positions = Map.set t.positions ~key:(Ticker.to_string ticker) ~data:pos }
 
-  (* --- Existing position; incoming BUY --- *)
+  (* Existing position; incoming BUY *)
   | Order.Buy, Some p -> (
       match p.direction with
       | Long ->
-          (* Increase existing long. *)
+          (* Increase existing long *)
           let trade_cost = fill_price $* quantity in
           let new_cash = t.cash $- trade_cost in
           let total_qty = p.quantity + quantity in
@@ -70,20 +78,20 @@ let update_position t ~ticker ~side ~quantity ~fill_price =
           { cash = new_cash;
             positions = Map.set t.positions ~key:(Ticker.to_string ticker) ~data:pos }
       | Short ->
-          (* Buy to cover an existing short, possibly crossing to long. *)
+          (* Buy to cover an existing short, possibly crossing to long *)
           let trade_cost = fill_price $* quantity in
           let new_cash = t.cash $- trade_cost in
           if quantity < p.quantity then
-            (* Partial cover: remain short. *)
+            (* Partial cover: remain short *)
             let remaining_qty = p.quantity - quantity in
             let pos = { p with quantity = remaining_qty } in
             { cash = new_cash;
               positions = Map.set t.positions ~key:(Ticker.to_string ticker) ~data:pos }
           else if quantity = p.quantity then
-            (* Fully flat. *)
+            (* Fully flat *)
             { cash = new_cash; positions = Map.remove t.positions (Ticker.to_string ticker) }
           else
-            (* Cross from short to long in one trade. *)
+            (* Cross from short to long in one trade *)
             let remaining_long = quantity - p.quantity in
             let pos =
               { ticker;
@@ -94,11 +102,11 @@ let update_position t ~ticker ~side ~quantity ~fill_price =
             { cash = new_cash;
               positions = Map.set t.positions ~key:(Ticker.to_string ticker) ~data:pos })
 
-  (* --- Existing position; incoming SELL --- *)
+  (* Existing position; incoming SELL *)
   | Order.Sell, Some p -> (
       match p.direction with
       | Long ->
-          (* Sell out of a long, maybe cross to short. *)
+          (* Sell out of a long, maybe cross to short *)
           let proceeds = fill_price $* quantity in
           let new_cash = t.cash $+ proceeds in
           if quantity < p.quantity then
@@ -107,10 +115,10 @@ let update_position t ~ticker ~side ~quantity ~fill_price =
             { cash = new_cash;
               positions = Map.set t.positions ~key:(Ticker.to_string ticker) ~data:pos }
           else if quantity = p.quantity then
-            (* Close the long. *)
+            (* Close the long *)
             { cash = new_cash; positions = Map.remove t.positions (Ticker.to_string ticker) }
           else
-            (* Sell more than long: end up short. *)
+            (* Sell more than long: end up short *)
             let extra_short = quantity - p.quantity in
             let pos =
               { ticker;
@@ -121,7 +129,7 @@ let update_position t ~ticker ~side ~quantity ~fill_price =
             { cash = new_cash;
               positions = Map.set t.positions ~key:(Ticker.to_string ticker) ~data:pos }
       | Short ->
-          (* Increase the size of an existing short. *)
+          (* Increase the size of an existing short *)
           let proceeds = fill_price $* quantity in
           let new_cash = t.cash $+ proceeds in
           let total_qty = p.quantity + quantity in
@@ -135,8 +143,10 @@ let update_position t ~ticker ~side ~quantity ~fill_price =
           { cash = new_cash;
             positions = Map.set t.positions ~key:(Ticker.to_string ticker) ~data:pos })
 
+(* Function: list all positions *)
 let all_positions t = Map.data t.positions
 
+(* Function: compute marked-to-market value of positions *)
 let market_value ~prices t =
   Map.fold t.positions ~init:(Money.of_int_cents 0)
     ~f:(fun ~key:_ ~data:pos acc ->
@@ -153,6 +163,7 @@ let market_value ~prices t =
           acc $+ signed)
 
 
+(* Function: compute total equity (cash + market value) *)
 let equity ~prices t =
   let open Money in
   let mv = market_value ~prices t in

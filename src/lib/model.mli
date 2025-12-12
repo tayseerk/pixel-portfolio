@@ -5,14 +5,13 @@ open Core
    This manages stocks, each has its own stochastic process, either
    GBM or OU and an initial price *)
 
-(* type of stchastic model for a stock *)
+(* Type: stochastic model for a stock. *)
 type process =
   | GBM of Gbm.t
   | OU of Ou.t
 [@@deriving sexp]
 
-
-(* description of a single asses in a simulated game or universe*)
+(* Type: ticker, process, and initial price *)
 type asset = {
   ticker : Ticker.t;
   process : process;
@@ -20,27 +19,31 @@ type asset = {
 }
 [@@deriving sexp, fields]
 
-(* full set of assets *)
+(* Type: map of ticker string to asset *)
 type universe = asset String.Map.t [@@deriving sexp]
 
-(* universe or game with no assets *)
+(* Value: no assets *)
 val empty_universe : universe
 
-(* returning new universe with assets inserted *)
+(* Function: insert/replace an asset by ticker key *)
 val add_asset : universe -> asset -> universe
 
-(* finding asset in universe *)
+(* Function: lookup asset by ticker *)
 val find_asset : universe -> Ticker.t -> asset option
 
-(* returning map from ticker for every asset with the prices in cent *)
+(* Function: map ticker -> initial price (cents) *)
 val initial_prices : universe -> Money.cents String.Map.t
 
+(* Function: convert cents to float dollars *)
 val price_to_float : Money.cents -> float
+
+(* Function: convert float dollars to cents *)
 val float_to_price : float -> Money.cents
 
+(* Function: step one asset using optional noise *)
 val evolve_price : asset -> Money.cents -> float option -> Money.cents
 
-(* Advancing all assets in the game by one time step *)
+(* Function: advance all assets one step given prices/noises *)
 val step_universe :
   universe ->
   current_prices:Money.cents String.Map.t ->

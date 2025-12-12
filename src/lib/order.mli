@@ -1,30 +1,30 @@
-(* Buy or sell side *)
+(* Type: buy or sell side *)
 type order_type =
   | Buy
   | Sell
 [@@deriving sexp, compare]
 
-(* Alias so other modules can refer to [Order.side] if they want. *)
+(* Alias: side — same as order_type*)
 type side = order_type [@@deriving sexp, compare]
 
-(* Market vs limit order *)
+(* Type: market, limit, or stop-loss *)
 type order_kind =
   | Market
   | Limit of Money.cents
   | Stop_loss of Money.cents
 [@@deriving sexp, compare]
 
-(* Unique order identifier *)
+(* Type: unique identifier *)
 type order_id = int [@@deriving sexp, compare, hash]
 
-(* Order lifecycle status *)
+(* Type: lifecycle state *)
 type order_status =
   | Open
   | Filled
   | Cancelled
 [@@deriving sexp, compare]
 
-(* Order payload *)
+(* Type: order payload. *)
 type t = {
   id : order_id;
   ticker : Ticker.t;
@@ -35,13 +35,14 @@ type t = {
 }
 [@@deriving sexp, fields]
 
+(* Type: filled order with price *)
 type execution = {
   order : t;
   fill_price : Money.cents;
 }
 [@@deriving sexp, fields]
 
-(* Build a market order *)
+(* Function: build a market order (auto id if omitted) *)
 val create_market :
   ticker:Ticker.t ->
   type_of_order:order_type ->
@@ -49,7 +50,7 @@ val create_market :
   ?id:order_id ->
   t
 
-(* Build a limit order *)
+(* Function: build a limit order (auto id if omitted) *)
 val create_limit :
   ticker:Ticker.t ->
   type_of_order:order_type ->
@@ -58,8 +59,7 @@ val create_limit :
   ?id:order_id ->
   t
 
-(* Build a stop-loss order which is a protective sell that triggers when
-   price <= stop_price for sells *)
+(* Function: build a stop-loss order (auto id if omitted) *)
 val create_stop_loss :
   ticker:Ticker.t ->
   type_of_order:order_type ->
@@ -68,10 +68,9 @@ val create_stop_loss :
   ?id:order_id ->
   t
 
-
-
-(* Mark an order filled *)
+(* Function: mark an order filled *)
 val order_filled : t -> t
-(* Mark an order cancelled *)
+
+(* Function: mark an order cancelled *)
 val order_cancelled : t -> t
 

@@ -1,6 +1,6 @@
 open Core
 
-(** config to start a new game instance *)
+(* Type: initial settings for a new game *)
 type config = {
    universe : Model.universe;
    initial_prices : Money.cents String.Map.t;
@@ -8,61 +8,62 @@ type config = {
 }
 [@@deriving sexp]
 
+(* Type: live engine state (config, prices, portfolio, orders, level). *)
 type t [@@deriving sexp]
 
-(**create new engine state from the config above *)
+(* Function: build a new engine from config. *)
 val create : config -> t
 
-(** curr prices for all the tickers (in cents) *)
+(* Function: accessor for current price map *)
 val prices : t -> Money.cents String.Map.t
 
-(** curr portfolio (has the amount of cash and the positions) *)
+(* Function: accessor for portfolio state *)
 val portfolio : t -> Portfolio.t
 
-(** curr index of the step *)
+(* Function: accessor for simulation step *)
 val time_index : t -> int
 
+(* Function: accessor for engine config *)
 val config : t -> config
 
-(** return a new engine with the portfolio *)
+(* Function: return a copy with new portfolio *)
 val with_portfolio : t -> Portfolio.t -> t
 
-(** return a new engine with the price map *)
+(* Function: return a copy with new prices *)
 val with_prices : t -> Money.cents String.Map.t -> t
 
-(** holds all the open orders in the curr engine *)
+(* Function: accessor for open orders list *)
 val open_orders : t -> Order.t list
 
-(** add an open order to the state of the curr engine *)
+(* Function: prepend an open order *)
 val add_open_order : t -> Order.t -> t
 
-(** remove all open orders in the state of the curr engine *)
+(* Function: remove all open orders *)
 val clear_open_orders : t -> t
 
-(** Cancel an open order by id, if present, returning an updated engine. *)
+(* Function: remove an open order by id *)
 val cancel_order : t -> Order.order_id -> t
 
-(** when we implement the code, this will submit a new order to the curr engine *)
-(** for now though it simply records the order *)
+(* Function: record/execute an order, maybe returning an execution *)
 val submit_order :
   t ->
   order:Order.t ->
   t * Order.execution option
 
-(** apply a filled order to the curr engine *)
+(* Function: apply a filled order to state *)
 val apply_execution : t -> Order.execution -> t
 
-(** move the game/sim by one tick or step*)
-(** noise will be implemented later, optional at the moment since it drives price dynamics *)
+(* Function: advance one step with optional noise *)
 val tick :
   t ->
   noise:float String.Map.t ->
   t
 
-(** cash + positions of the player in cents *)
+(* Function: compute total equity from cash + positions *)
 val equity : t -> Money.cents
 
+(* Function: accessor for current player level *)
 val level : t -> int
 
-(** Re-run matching on open limit orders against current prices without advancing time. *)
+(* Function: fill open orders at current prices without advancing time *)
 val reconcile_open_orders : t -> t

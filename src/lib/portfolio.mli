@@ -1,15 +1,14 @@
 open Core
 
-(** The portfolio management for pixel-portfolio
-   This module will track the player's cash, holdings, equity,
-   and the level of the player*)
+(** Portfolio management: track cash, holdings, and equity. *)
 
+(* Type: long or short orientation *)
 type direction =
   | Long
   | Short
 [@@deriving sexp, compare]
 
-(* Position in a ticker *)
+(* Type: position in a ticker. *)
 type position = {
   ticker : Ticker.t;
   quantity : int;
@@ -18,24 +17,26 @@ type position = {
 }
 [@@deriving sexp, fields]
 
-(* Portfolio with cash and open positions by ticker *)
+(* Type: portfolio with cash and open positions by ticker. *)
 type t = {
   cash : Money.cents;
   positions : position String.Map.t;
 }
 [@@deriving sexp]
 
-(* create a new portfolio with the given cash and no positions open *)
+(* Value: empty portfolio with no positions. *)
 val empty : t
 
+(* Function: build a portfolio from starting cash *)
 val of_cash : Money.cents -> t
 
+(* Function: copy portfolio with updated cash *)
 val with_cash : t -> Money.cents -> t
 
-(* returning the open position for a ticker in the portfolio, none if no position exists*)
+(* Function: find the open position for a ticker, if any. *)
 val position_for : t -> Ticker.t -> position option
 
-(* Returning new portfolio that is obtained by applying a filled trde to the portfolio *)
+(* Function: apply a filled trade to the portfolio. *)
 val update_position :
   t ->
   ticker:Ticker.t ->
@@ -44,12 +45,11 @@ val update_position :
   fill_price:Money.cents ->
   t
 
-(** compute the total market value of all the open positions in a portfolio
-   using the map*)
+(* Function: compute total market value of open positions. *)
 val market_value : prices:Money.cents String.Map.t -> t -> Money.cents
 
-(* Returning the total equity of a portfolio using given prices *)
+(* Function: compute total equity (cash + market value). *)
 val equity : prices:Money.cents String.Map.t -> t -> Money.cents
 
-(* Returnign all open positions in a list *)
+(* Function: list all open positions. *)
 val all_positions : t -> position list
