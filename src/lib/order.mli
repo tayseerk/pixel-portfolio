@@ -11,6 +11,7 @@ type side = order_type [@@deriving sexp, compare]
 type order_kind =
   | Market
   | Limit of Money.cents
+  | Stop_loss of Money.cents
 [@@deriving sexp, compare]
 
 (* Unique order identifier *)
@@ -18,6 +19,7 @@ type order_id = int [@@deriving sexp, compare, hash]
 
 (* Order lifecycle status *)
 type order_status =
+  | Open
   | Filled
   | Cancelled
 [@@deriving sexp, compare]
@@ -55,6 +57,17 @@ val create_limit :
   limit_price:Money.cents ->
   ?id:order_id ->
   t
+
+(* Build a stop-loss order which is a protective sell that triggers when
+   price <= stop_price for sells *)
+val create_stop_loss :
+  ticker:Ticker.t ->
+  type_of_order:order_type ->
+  quantity:int ->
+  stop_price:Money.cents ->
+  ?id:order_id ->
+  t
+
 
 
 (* Mark an order filled *)

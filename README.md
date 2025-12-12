@@ -3,7 +3,7 @@ Repository for FPSE Final Project, Group Members: Tayseer Karrossi, Byron S. Mit
 
 Overview of the project:
 
-Pixel Portfolio is a command-line stock-simulation game that models a small universe of assets whose prices evolve through realistic stochastic processes, including Geometric Brownian Motion, Ornstein–Uhlenbeck mean reversion, correlated movement, and optional volatility-switches. The purpose of the project is to create a functional, fully deterministic market engine that supports market and stop loss orders, equity tracking, leveling, and persistent save/load functionality. We are intensely interested in the stock market, day trading, and the financial world, which motivated us to build a simulator that reflects real trading dynamics rather than a trivial game. This project allows us to combine financial modeling with OCaml’s functional abstractions while producing a reusable stochastic-simulation library as required in FPSE. It will mainly be used to test our knowledge of the stock market, as we would like to understand what actually drives it. Tayseer has minimal experience in the stock market during the COVID quarantine, and I would like to start trading stocks.  
+Pixel Portfolio is a command-line stock-simulation game that models a small universe of assets whose prices evolve through realistic stochastic processes, including Geometric Brownian Motion and Ornstein–Uhlenbeck mean reversion. The purpose of the project is to create a functional, fully deterministic market engine that supports market and stop loss orders, equity tracking, leveling, and persistent save/load functionality. We are intensely interested in the stock market, day trading, and the financial world, which motivated us to build a simulator that reflects real trading dynamics rather than a trivial game. This project allows us to combine financial modeling with OCaml’s functional abstractions while producing a reusable stochastic-simulation library as required in FPSE. It will mainly be used to test our knowledge of the stock market, as we would like to understand what actually drives it. Tayseer has minimal experience in the stock market during the COVID quarantine, and I would like to start trading stocks.  
 
 Current libraries:
   - Sexplib
@@ -24,7 +24,6 @@ What works:
 
 What is not working:
 - buy option orders (high level, may not implement for this beginner stock sim game)
-- stop loss orders (high level, may not implement for this beginner stock sim game)
 
 How to run
 - dune build

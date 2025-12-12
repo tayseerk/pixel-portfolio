@@ -18,6 +18,8 @@ let difficulty_to_cash = function
 
 let default_state_file = "game.sexp"
 
+let max_sim_steps = 160
+
 (* Dollar helper *)
 let cents_of_dollars dollars = Money.float_dollars_to_cents dollars
 
@@ -158,8 +160,14 @@ let print_positions engine =
   else (
     printf "Positions:\n";
     List.iter positions ~f:(fun pos ->
-        printf "  - %s: %d share(s) @ $%s avg\n"
+        let dir =
+          match pos.Portfolio.direction with
+          | Portfolio.Long -> "LONG"
+          | Portfolio.Short -> "SHORT"
+        in
+        printf "  - %s: %s %d share(s) @ $%s avg\n"
           (Ticker.to_string pos.Portfolio.ticker)
+          dir
           pos.Portfolio.quantity
           (pretty_money pos.Portfolio.avg_cost)));
   let open_orders = Engine.open_orders engine in
@@ -177,6 +185,7 @@ let print_positions engine =
           match order.Order.kind with
           | Market -> "market"
           | Limit px -> "limit $" ^ pretty_money px
+          | Stop_loss px -> "stop-loss $" ^ pretty_money px
         in
         printf "  - #%d %s %d %s (%s)\n"
           order.Order.id side order.Order.quantity
@@ -195,30 +204,66 @@ let qty_must_be_positive qty =
   if qty <= 0 then Or_error.errorf "Quantity must be positive, got %d" qty
   else Or_error.return ()
 
+let ensure_can_afford_buy ~engine ~ticker ~qty ~price_cents =
+  let open Or_error.Let_syntax in
+  let open Money in
+  let cost = multiply price_cents qty in
+  let cash = (Engine.portfolio engine).Portfolio.cash in
+  if cost > cash then
+    Or_error.errorf
+      "Insufficient cash to buy %d share(s) of %s: need $%s but only have $%s"
+      qty
+      ticker
+      (pretty_money cost)
+      (pretty_money cash)
+  else
+    return ()
+
 let place_order ~state ~ticker ~qty ~price_opt ~side =
-  (* Create market/limit order, persist state, and print status *)
+  (* Create market/limit/stop-loss order, persist state, and print status *)
   let open Or_error.Let_syntax in
   let%bind () = qty_must_be_positive qty in
-  let%bind limit_price = price_arg_to_cents price_opt in
+  let%bind limit_or_stop = price_arg_to_cents price_opt in
   let%bind engine = load_engine ~state in
+  (* Margin check for buys *)
+  let%bind () =
+    match (side, limit_or_stop) with
+    | Order.Buy, Some px ->
+        ensure_can_afford_buy ~engine ~ticker ~qty ~price_cents:px
+    | Order.Buy, None -> (
+        match Map.find (Engine.prices engine) ticker with
+        | None ->
+            Or_error.errorf "No price available for ticker %s" ticker
+        | Some px ->
+            ensure_can_afford_buy ~engine ~ticker ~qty ~price_cents:px)
+    | Order.Sell, _ ->
+        Or_error.return ()
+  in
   let order =
-    match limit_price with
-    | None ->
+    match (side, limit_or_stop) with
+    | _, None ->
+        (* Market order *)
         Order.create_market ~ticker ~type_of_order:side ~quantity:qty ?id:None
-    | Some px ->
+    | Order.Buy, Some px ->
+        (* Limit buy *)
         Order.create_limit ~ticker ~type_of_order:side ~quantity:qty
           ~limit_price:px ?id:None
+    | Order.Sell, Some px ->
+        (* Stop-loss sell: triggers when price <= px *)
+        Order.create_stop_loss ~ticker ~type_of_order:side ~quantity:qty
+          ~stop_price:px ?id:None
   in
   let engine', exec_opt = Engine.submit_order engine ~order in
   let%bind () = save_engine ~state engine' in
   (match exec_opt with
    | Some exec ->
-       printf "%s order filled immediately at $%s\n%!"
+       printf "%s order filled at $%s\n%!"
          (match side with Buy -> "Buy" | Sell -> "Sell")
          (pretty_money exec.Order.fill_price)
    | None ->
+       (* For limit buys and stop-loss sells, order may remain open. *)
        printf
-         "%s order recorded as an open order (limit not reached yet).\n%!"
+         "%s order recorded as an open order.\n%!"
          (match side with Buy -> "Buy" | Sell -> "Sell"));
   print_positions engine';
   return ()
@@ -228,6 +273,10 @@ let simulate ~state ~steps =
   let open Or_error.Let_syntax in
   if steps <= 0 then
     Or_error.errorf "Steps must be >= 1, got %d" steps
+  else if steps > max_sim_steps then
+    Or_error.errorf
+      "Steps must be between 1 and %d, got %d"
+      max_sim_steps steps
   else
     let%bind engine = load_engine ~state in
     let old_prices = Engine.prices engine in
@@ -297,6 +346,19 @@ let load_into ~state ~source =
   print_prices engine;
   return engine
 
+let cancel_order_cmd ~state ~order_id =
+  let open Or_error.Let_syntax in
+  let%bind engine = load_engine ~state in
+  let before = Engine.open_orders engine in
+  let engine' = Engine.cancel_order engine order_id in
+  let after = Engine.open_orders engine' in
+  let%bind () = save_engine ~state engine' in
+  if List.length before = List.length after then
+    printf "No open order with id #%d found.\n%!" order_id
+  else
+    printf "Cancelled order #%d.\n%!" order_id;
+  return ()
+
 (* ----- Interactive shell ----- *)
 
 let print_welcome () =
@@ -312,6 +374,7 @@ let print_help () =
   printf "  portfolio [state]                Show cash, equity, positions, open orders.\n";
   printf "  buy <ticker> <qty> [price] [state]    Market or limit buy.\n";
   printf "  sell <ticker> <qty> [price] [state]   Market or stop/limit sell.\n";
+  printf "  cancel <id> [state]             Cancel an open order.\n";
   printf "  simulate [steps] [state]         Run N steps (default 1).\n";
   printf "  help                             Show this help.\n";
   printf "  exit                             Quit the game.\n%!"
@@ -381,7 +444,20 @@ let price_arg =
   Arg.(value & pos 2 (some float) None & info ~doc:"Limit/stop price (omit for market)" ~docv:"PRICE" [])
 
 let steps_arg =
-  Arg.(value & opt int 1 & info ~doc:"Number of steps to simulate (default 1)" ~docv:"STEPS" [ "steps" ])
+  Arg.(
+    value
+    & opt int 1
+    & info
+        ~doc:(Printf.sprintf
+                "Number of steps to simulate (1-%d, default 1)" max_sim_steps)
+        ~docv:"STEPS"
+        [ "steps" ])
+
+let order_id_arg =
+  Arg.(
+    required
+    & pos 0 (some int) None
+    & info ~doc:"Order id to cancel (see portfolio open orders)" ~docv:"ID" [])
 
 (* Cmdliner command terms *)
 let new_term =
@@ -477,6 +553,18 @@ let sell_term =
   in
   Cmd.v info term
 
+let cancel_term =
+  let doc = "Cancel an open order by id." in
+  let info = Cmd.info "cancel" ~doc in
+  let term =
+    Term.(
+      ret
+        (let+ state = state_arg
+         and+ id = order_id_arg in
+         cancel_order_cmd ~state ~order_id:id |> to_cmdliner))
+  in
+  Cmd.v info term
+  
 let default_cmd =
   let doc = "Pixel Portfolio stochastic market simulator (interactive + CLI)." in
   let info = Cmd.info "pixel_portfolio" ~doc in
@@ -487,7 +575,8 @@ let default_cmd =
       portfolio_term;
       simulate_term;
       buy_term;
-      sell_term ]
+      sell_term;
+      cancel_term ]
 
 let run_cmd tokens =
   (* Forward a parsed line into Cmdliner command evaluation *)

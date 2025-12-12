@@ -3,11 +3,18 @@ open Core
 (** The portfolio management for pixel-portfolio
    This module will track the player's cash, holdings, equity,
    and the level of the player*)
+
+type direction =
+  | Long
+  | Short
+[@@deriving sexp, compare]
+
 (* Position in a ticker *)
 type position = {
   ticker : Ticker.t;
   quantity : int;
   avg_cost : Money.cents;
+  direction : direction;
 }
 [@@deriving sexp, fields]
 

@@ -39,6 +39,9 @@ val add_open_order : t -> Order.t -> t
 (** remove all open orders in the state of the curr engine *)
 val clear_open_orders : t -> t
 
+(** Cancel an open order by id, if present, returning an updated engine. *)
+val cancel_order : t -> Order.order_id -> t
+
 (** when we implement the code, this will submit a new order to the curr engine *)
 (** for now though it simply records the order *)
 val submit_order :
