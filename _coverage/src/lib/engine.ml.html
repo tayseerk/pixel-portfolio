@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8"/>
     <title>engine.ml &mdash; Coverage report</title>
-    <meta name="description" content="62.50% coverage in src/lib/engine.ml">
+    <meta name="description" content="72.50% coverage in src/lib/engine.ml">
     <link rel="stylesheet" href="../../coverage.css"/>
     <script src="../../highlight.pack.js"></script>
     <script>hljs.initHighlightingOnLoad();</script>
@@ -15,22 +15,14 @@
           <span class="dirname">src/lib/</span>engine.ml
         </a>
       </h1>
-      <h2>62.50%</h2>
+      <h2>72.50%</h2>
     </div>
     <div id="navbar">
       <span class="unvisited" style="top:9.35%"></span>
       <span class="unvisited" style="top:17.27%"></span>
-      <span class="unvisited" style="top:18.35%"></span>
       <span class="unvisited" style="top:19.42%"></span>
       <span class="unvisited" style="top:23.74%"></span>
-      <span class="unvisited" style="top:25.18%"></span>
       <span class="unvisited" style="top:25.54%"></span>
-      <span class="unvisited" style="top:26.26%"></span>
-      <span class="unvisited" style="top:31.29%"></span>
-      <span class="unvisited" style="top:32.37%"></span>
-      <span class="unvisited" style="top:33.45%"></span>
-      <span class="unvisited" style="top:34.53%"></span>
-      <span class="unvisited" style="top:35.25%"></span>
       <span class="unvisited" style="top:40.29%"></span>
       <span class="unvisited" style="top:41.73%"></span>
       <span class="unvisited" style="top:42.09%"></span>
@@ -43,10 +35,6 @@
       <span class="unvisited" style="bottom:48.56%"></span>
       <span class="unvisited" style="bottom:37.41%"></span>
       <span class="unvisited" style="bottom:36.33%"></span>
-      <span class="unvisited" style="bottom:32.37%"></span>
-      <span class="unvisited" style="bottom:32.01%"></span>
-      <span class="unvisited" style="bottom:30.58%"></span>
-      <span class="unvisited" style="bottom:30.22%"></span>
       <span class="unvisited" style="bottom:28.42%"></span>
       <span class="unvisited" style="bottom:27.34%"></span>
       <span class="unvisited" style="bottom:23.74%"></span>
@@ -113,7 +101,7 @@
 <a id="L48"></a><span class="unvisited"> </span>
 <a id="L49"></a><span > </span>
 <a id="L50"></a><span > </span>
-<a id="L51"></a><span class="unvisited"> </span>
+<a id="L51"></a><span class="visited"> </span>
 <a id="L52"></a><span > </span>
 <a id="L53"></a><span > </span>
 <a id="L54"></a><span class="unvisited"> </span>
@@ -132,10 +120,10 @@
 <a id="L67"></a><span > </span>
 <a id="L68"></a><span > </span>
 <a id="L69"></a><span > </span>
-<a id="L70"></a><span class="unvisited"> </span>
+<a id="L70"></a><span class="visited"> </span>
 <a id="L71"></a><span class="unvisited"> </span>
 <a id="L72"></a><span > </span>
-<a id="L73"></a><span class="unvisited"> </span>
+<a id="L73"></a><span class="visited"> </span>
 <a id="L74"></a><span > </span>
 <a id="L75"></a><span > </span>
 <a id="L76"></a><span > </span>
@@ -149,18 +137,18 @@
 <a id="L84"></a><span > </span>
 <a id="L85"></a><span class="visited"> </span>
 <a id="L86"></a><span > </span>
-<a id="L87"></a><span class="unvisited"> </span>
+<a id="L87"></a><span class="visited"> </span>
 <a id="L88"></a><span > </span>
 <a id="L89"></a><span > </span>
-<a id="L90"></a><span class="unvisited"> </span>
+<a id="L90"></a><span class="visited"> </span>
 <a id="L91"></a><span > </span>
 <a id="L92"></a><span > </span>
-<a id="L93"></a><span class="unvisited"> </span>
+<a id="L93"></a><span class="visited"> </span>
 <a id="L94"></a><span > </span>
 <a id="L95"></a><span > </span>
-<a id="L96"></a><span class="unvisited"> </span>
+<a id="L96"></a><span class="visited"> </span>
 <a id="L97"></a><span > </span>
-<a id="L98"></a><span class="unvisited"> </span>
+<a id="L98"></a><span class="visited"> </span>
 <a id="L99"></a><span > </span>
 <a id="L100"></a><span > </span>
 <a id="L101"></a><span > </span>
@@ -250,13 +238,13 @@
 <a id="L185"></a><span class="visited"> </span>
 <a id="L186"></a><span class="visited"> </span>
 <a id="L187"></a><span > </span>
-<a id="L188"></a><span class="unvisited"> </span>
-<a id="L189"></a><span class="unvisited"> </span>
+<a id="L188"></a><span class="visited"> </span>
+<a id="L189"></a><span class="visited"> </span>
 <a id="L190"></a><span > </span>
 <a id="L191"></a><span > </span>
 <a id="L192"></a><span > </span>
-<a id="L193"></a><span class="unvisited"> </span>
-<a id="L194"></a><span class="unvisited"> </span>
+<a id="L193"></a><span class="visited"> </span>
+<a id="L194"></a><span class="visited"> </span>
 <a id="L195"></a><span class="visited"> </span>
 <a id="L196"></a><span > </span>
 <a id="L197"></a><span > </span>
@@ -647,14 +635,14 @@
 
 (* Function: build a fresh engine from a config *)
 let create config =
-  <span data-count="5">l</span>et prices =
+  <span data-count="7">l</span>et prices =
     if Map.is_empty config.initial_prices then
       <span data-count="0">M</span>odel.initial_price<span data-count="0">s</span> config.universe
     else
-      <span data-count="5">c</span>onfig.initial_prices
+      <span data-count="7">c</span>onfig.initial_prices
   in
   let portfolio = Portfolio.of_cash config.initial_cash in
-  <span data-count="5">{</span> config;
+  <span data-count="7">{</span> config;
     time_index = 0;
     prices;
     portfolio;
@@ -674,71 +662,71 @@ let time_index t = <span data-count="3">t</span>.time_index
 let config t = <span data-count="0">t</span>.config
 
 (* Function: accessor for current player level *)
-let level t = <span data-count="0">t</span>.level
+let level t = <span data-count="1">t</span>.level
 
 (* Function: return a copy with new portfolio *)
 let with_portfolio t portfolio = <span data-count="0">{</span> t with portfolio }
 
 (* Function: return a copy with new prices *)
-let with_prices t prices = <span data-count="1">{</span> t with prices }
+let with_prices t prices = <span data-count="2">{</span> t with prices }
 
 (* Function: accessor for open orders list *)
-let open_orders t = <span data-count="3">t</span>.open_orders
+let open_orders t = <span data-count="4">t</span>.open_orders
 
 (* Function: prepend an open order *)
-let add_open_order t order = <span data-count="4">{</span> t with open_orders = order :: t.open_orders }
+let add_open_order t order = <span data-count="6">{</span> t with open_orders = order :: t.open_orders }
 
 (* Function: remove all open orders *)
 let clear_open_orders t = <span data-count="0">{</span> t with open_orders = [] }
 
 (* Function: remove an open order by id *)
 let cancel_order t order_id =
-  <span data-count="0">l</span>et remaining =
+  <span data-count="1">l</span>et remaining =
     List.filter t.open_orders ~f:(fun o -&gt; <span data-count="0">o</span>.Order.id &lt;&gt; order_id)
   in
-  <span data-count="0">{</span> t with open_orders = remaining }
+  <span data-count="1">{</span> t with open_orders = remaining }
 
 (* Function: compute total equity from cash + positions *)
 let equity t =
-  <span data-count="7">P</span>ortfolio.equity ~prices:t.prices t.portfolio
+  <span data-count="10">P</span>ortfolio.equity ~prices:t.prices t.portfolio
 
 (* Function: compute target level from equity gains *)
 let compute_level config ~equity_cents =
   (* Base equity in dollars at level 1 *)
-  <span data-count="7">l</span>et base_cash = Money.to_float_dollars config.initial_cash in
-  <span data-count="7">l</span>et current = Money.to_float_dollars equity_cents in
+  <span data-count="10">l</span>et base_cash = Money.to_float_dollars config.initial_cash in
+  <span data-count="10">l</span>et current = Money.to_float_dollars equity_cents in
   (* No level-ups if you're at or below starting cash *)
-  <span data-count="7">i</span>f Float.(current &lt;= base_cash) then <span data-count="7">1</span>
+  <span data-count="10">i</span>f Float.(current &lt;= base_cash) then <span data-count="9">1</span>
   else
-    <span data-count="0">l</span>et percent_gain = (current -. base_cash) /. base_cash in
+    <span data-count="1">l</span>et percent_gain = (current -. base_cash) /. base_cash in
     (* example: 0.05 for +5% *)
     let rec loop level acc =
-      <span data-count="0">l</span>et next_level = level + 1 in
+      <span data-count="3">l</span>et next_level = level + 1 in
       (* 1 for levels 1–10, 2 for 11–20, etc. *)
       let band_index = ((next_level - 1) / 10) + 1 in
-      let step_gain = 0.05 *. Float.of_in<span data-count="0">t</span> band_index in
+      let step_gain = 0.05 *. Float.of_in<span data-count="3">t</span> band_index in
       let next_acc = acc +. step_gain in
       if Float.(percent_gain &lt; next_acc) then
-        <span data-count="0">l</span>evel
+        <span data-count="1">l</span>evel
       else
-        <span data-count="0">l</span>oop next_level next_acc
+        <span data-count="2">l</span>oop next_level next_acc
     in
     loop 1 0.0
 
 (* Function: update engine level based on equity *)
 let update_level t =
-  <span data-count="7">l</span>et eq = equity t in
-  <span data-count="7">l</span>et target = compute_level t.config ~equity_cents:eq in
-  <span data-count="7">l</span>et new_level = Int.max t.level target in
-  <span data-count="7">{</span> t with level = new_level }
+  <span data-count="10">l</span>et eq = equity t in
+  <span data-count="10">l</span>et target = compute_level t.config ~equity_cents:eq in
+  <span data-count="10">l</span>et new_level = Int.max t.level target in
+  <span data-count="10">{</span> t with level = new_level }
 
 (* Function: check if limit order crosses current price *)
 let should_fill_limit order ~current_price =
-  <span data-count="5">m</span>atch order.Order.kind with
+  <span data-count="6">m</span>atch order.Order.kind with
   | <span data-count="0">M</span>arket -&gt; true
-  | <span data-count="5">L</span>imit limit_price -&gt;
+  | <span data-count="6">L</span>imit limit_price -&gt;
       (match order.Order.type_of_order with
-       | <span data-count="5">O</span>rder.Buy -&gt; Money.compar<span data-count="5">e</span> current_price limit_price &lt;= 0
+       | <span data-count="6">O</span>rder.Buy -&gt; Money.compar<span data-count="6">e</span> current_price limit_price &lt;= 0
        | <span data-count="0">O</span>rder.Sell -&gt; Money.compar<span data-count="0">e</span> current_price limit_price &gt;= 0)
   | <span data-count="0">S</span>top_loss _ -&gt; false
 
@@ -754,29 +742,29 @@ let should_trigger_stop_loss order ~current_price =
 
 (* Function: apply a filled order to engine state *)
 let apply_execution t execution =
-  <span data-count="3">l</span>et open Money in
+  <span data-count="5">l</span>et open Money in
   let order = execution.Order.order in
   let cost = multiply execution.fill_price order.Order.quantity in
   (* remove this order from the open order book no matter what *)
-  <span data-count="3">l</span>et remaining_open =
-    List.filter t.open_orders ~f:(fun o -&gt; <span data-count="3">o</span>.Order.id &lt;&gt; order.Order.id)
+  <span data-count="5">l</span>et remaining_open =
+    List.filter t.open_orders ~f:(fun o -&gt; <span data-count="5">o</span>.Order.id &lt;&gt; order.Order.id)
   in
-  <span data-count="3">m</span>atch order.Order.type_of_order with
-  | <span data-count="2">O</span>rder.Buy -&gt;
+  <span data-count="5">m</span>atch order.Order.type_of_order with
+  | <span data-count="4">O</span>rder.Buy -&gt;
       (* enforce non-negative cash: if we can't afford it, cancel instead *)
-      if Money.compar<span data-count="2">e</span> cost t.portfolio.Portfolio.cash &gt; 0 then
+      if Money.compar<span data-count="4">e</span> cost t.portfolio.Portfolio.cash &gt; 0 then
         <span data-count="0">l</span>et _cancelled = Order.order_cancelled order in
         <span data-count="0">{</span> t with open_orders = remaining_open }
       else
         (* update long/short positions and cash, then refresh level *)
-        <span data-count="2">l</span>et new_portfolio =
+        <span data-count="4">l</span>et new_portfolio =
           Portfolio.update_position t.portfolio
             ~ticker:order.Order.ticker
             ~side:order.Order.type_of_order
             ~quantity:order.Order.quantity
             ~fill_price:execution.fill_price
         in
-        <span data-count="2">{</span> t with portfolio = new_portfolio; open_orders = remaining_open }
+        <span data-count="4">{</span> t with portfolio = new_portfolio; open_orders = remaining_open }
         |&gt; update_level
   | <span data-count="1">O</span>rder.Sell -&gt;
       (* update positions for sell (can close or flip to short), then refresh level *)
@@ -793,31 +781,31 @@ let apply_execution t execution =
 
 (* Function: add/execute an order and return execution if any *)
 let submit_order t ~order =
-  <span data-count="4">m</span>atch order.Order.kind with
-  | <span data-count="2">O</span>rder.Market -&gt;
+  <span data-count="6">m</span>atch order.Order.kind with
+  | <span data-count="3">O</span>rder.Market -&gt;
       (* immediately fill a market order at the current price if available *)
-      (match Map.find t.prices (Ticker.to_strin<span data-count="2">g</span> order.Order.ticker) with
+      (match Map.find t.prices (Ticker.to_strin<span data-count="3">g</span> order.Order.ticker) with
        | <span data-count="0">N</span>one -&gt;
           (* no price for this ticker: record as open, no execution *)
            let t' = add_open_order t order in
            <span data-count="0">(</span>t', None)
-       | <span data-count="2">S</span>ome px -&gt;
+       | <span data-count="3">S</span>ome px -&gt;
            let filled_order = Order.order_filled order in
-           <span data-count="2">l</span>et exec : Order.execution = { order = filled_order; fill_price = px } in
+           <span data-count="3">l</span>et exec : Order.execution = { order = filled_order; fill_price = px } in
            let t_after = add_open_order t filled_order in
-           <span data-count="2">l</span>et t' = apply_execution t_after exec in
-           <span data-count="2">(</span>t', Some exec))
-  | <span data-count="2">O</span>rder.Limit _ -&gt;
-      (match Map.find t.prices (Ticker.to_strin<span data-count="2">g</span> order.Order.ticker) with
-       | <span data-count="2">S</span>ome current_price when should_fill_limi<span data-count="2">t</span> order ~current_price -&gt;
+           <span data-count="3">l</span>et t' = apply_execution t_after exec in
+           <span data-count="3">(</span>t', Some exec))
+  | <span data-count="3">O</span>rder.Limit _ -&gt;
+      (match Map.find t.prices (Ticker.to_strin<span data-count="3">g</span> order.Order.ticker) with
+       | <span data-count="3">S</span>ome current_price when should_fill_limi<span data-count="3">t</span> order ~current_price -&gt;
            (* limit can fill immediately at current price *)
-           <span data-count="0">l</span>et filled_order = Order.order_filled order in
-           <span data-count="0">l</span>et exec : Order.execution =
+           <span data-count="1">l</span>et filled_order = Order.order_filled order in
+           <span data-count="1">l</span>et exec : Order.execution =
              { order = filled_order; fill_price = current_price }
            in
            let t_after = add_open_order t filled_order in
-           <span data-count="0">l</span>et t' = apply_execution t_after exec in
-           <span data-count="0">(</span>t', Some exec)
+           <span data-count="1">l</span>et t' = apply_execution t_after exec in
+           <span data-count="1">(</span>t', Some exec)
        | <span data-count="2">_</span> -&gt;
            (* otherwise, keep it open until later ticks *)
            let t' = add_open_order t order in
@@ -830,9 +818,9 @@ let submit_order t ~order =
 
 (* Function: walk open orders and fill those that conditions are met at current price *)
 let process_open_orders t =
-  <span data-count="4">l</span>et rec loop t pending orders =
-    <span data-count="7">m</span>atch orders with
-    | <span data-count="4">[</span>] -&gt; { t with open_orders = List.re<span data-count="4">v</span> pending } (* nothing left, keep pending list *)
+  <span data-count="5">l</span>et rec loop t pending orders =
+    <span data-count="8">m</span>atch orders with
+    | <span data-count="5">[</span>] -&gt; { t with open_orders = List.re<span data-count="5">v</span> pending } (* nothing left, keep pending list *)
     | <span data-count="3">o</span>rder :: rest -&gt; (
         match order.Order.kind with
         | <span data-count="0">M</span>arket -&gt;
@@ -900,7 +888,7 @@ let tick t ~noise =
 
 (* Function: fill any open orders at current prices *)
 let reconcile_open_orders t =
-  <span data-count="3">t</span> |&gt; process_open_order<span data-count="3">s</span> |&gt; update_level
+  <span data-count="4">t</span> |&gt; process_open_order<span data-count="4">s</span> |&gt; update_level
 
 </code></pre>
       </div>

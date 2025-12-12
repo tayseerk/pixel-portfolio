@@ -37,7 +37,8 @@ let step t ~price ~noise =
   let next_price = price *. Float.exp log_return in
   ensure_positive next_price
 
-(* Function: simulate a price path over a sequence of noises. *)
+(* Function: simulate a price path over a sequence of noises *)
+(* uses array of noises to simulate a price path *)
 let simulate_path model ~initial_price ~noises =
   let len = Array.length noises in
   let path = Array.create ~len initial_price in

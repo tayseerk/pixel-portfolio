@@ -154,8 +154,8 @@ open Core
 
 (* Function: construct a GBM model; dt (timestep size for gbm model) defaults to 1.0. *)
 let create ~mu ~sigma ?dt =
-  <span data-count="102">l</span>et dt = Option.value dt ~default:1.0 in
-  <span data-count="102">{</span> mu; sigma; dt }
+  <span data-count="105">l</span>et dt = Option.value dt ~default:1.0 in
+  <span data-count="105">{</span> mu; sigma; dt }
 
 
 (* Value: floor to keep simulated prices positive. *)
@@ -164,20 +164,20 @@ let min_price = 1e-6
 (* Function: clamp price to stay positive. *)
 let ensure_positive price =
   (* keep the simulated price strictly positive to avoid downstream issues *)
-  <span data-count="103">F</span>loat.max price min_price
+  <span data-count="104">F</span>loat.max price min_price
 
 (* Function: one GBM step with capped log-return to limit jumps. *)
 let step t ~price ~noise =
-  <span data-count="103">l</span>et drift = (t.mu -. 0.5 *. Float.squar<span data-count="103">e</span> t.sigma) *. t.dt in
-  let diffusion = t.sigma *. Float.sqr<span data-count="103">t</span> t.dt *. noise in
+  <span data-count="104">l</span>et drift = (t.mu -. 0.5 *. Float.squar<span data-count="104">e</span> t.sigma) *. t.dt in
+  let diffusion = t.sigma *. Float.sqr<span data-count="104">t</span> t.dt *. noise in
   (* cap log-return to keep moves modest (~8% max up/down per tick) *)
   let max_log_step = 0.08 in
   let log_return =
     drift +. diffusion
-    |&gt; Float.mi<span data-count="103">n</span> max_log_step
-    |&gt; Float.max (-<span data-count="103">.</span>max_log_step)
+    |&gt; Float.mi<span data-count="104">n</span> max_log_step
+    |&gt; Float.max (-<span data-count="104">.</span>max_log_step)
   in
-  <span data-count="103">l</span>et next_price = price *. Float.ex<span data-count="103">p</span> log_return in
+  <span data-count="104">l</span>et next_price = price *. Float.ex<span data-count="104">p</span> log_return in
   ensure_positive next_price
 
 (* Function: simulate a price path over a sequence of noises. *)
