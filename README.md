@@ -29,6 +29,14 @@ How to run
 - dune build
 - dune exec pixel_portfolio (then game starts everything is explained in the terminal/cmdliner)
 
+running coverage:
+BISECT_ENABLE=YES BISECT_FILE=$(pwd)/_build/default/bisect \
+  dune runtest --instrument-with bisect_ppx --force
+
+bisect-ppx-report html -o _coverage _build/default/bisect*.coverage
+
+open _coverage/index.html
+
 plan for completion (DONE):
 
   By November 16th - make sure .mli files are good and no more major design changes will occur (after TA feedback)
