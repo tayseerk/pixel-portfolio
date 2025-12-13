@@ -1,7 +1,7 @@
 (library
  (name pixel_portfolio_lib)
  (public_name pixel_portfolio.lib)
- (libraries core yojson)
+ (libraries core)
  (preprocess (pps ppx_jane))
  (instrumentation (backend bisect_ppx))
- (modules ticker engine money gbm ou model order portfolio save_game_state noise game_config))
+ (modules ticker engine money gbm ou model order portfolio save_game_state noise game_config game_view game_runtime))
