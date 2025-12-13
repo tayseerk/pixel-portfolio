@@ -5,6 +5,10 @@
 .merlin
 .merlin-shared
 
+# Coverage reports
+/_coverage/
+*.coverage
+
 # OCaml build artifacts
 *.cmi
 *.cmx
