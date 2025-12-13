@@ -83,13 +83,13 @@ let random_state = Random.State.mak<span data-count="3">e</span> [| 0x5eed_cafe 
 (* Function: draw uniform noise in [-max_abs_noise, max_abs_noise] *)
 let sample () =
   (* Sample uniformly in [-max_abs_noise, max_abs_noise] *)
-  <span data-count="51">R</span>andom.State.floa<span data-count="51">t</span> random_state noise_range -. max_abs_noise
+  <span data-count="1661">R</span>andom.State.floa<span data-count="1661">t</span> random_state noise_range -. max_abs_noise
 
 (* Function: fill missing tickers with sampled noise *)
 let ensure_noise_map ~universe ~existing =
-  <span data-count="3">M</span>ap.fold universe ~init:existing ~f:(fun ~key ~data:_ acc -&gt;
-      <span data-count="3">i</span>f Map.mem acc key then <span data-count="2">a</span>cc
-      else <span data-count="1">M</span>ap.set acc ~key ~data:(sampl<span data-count="1">e</span> ()))
+  <span data-count="164">M</span>ap.fold universe ~init:existing ~f:(fun ~key ~data:_ acc -&gt;
+      <span data-count="1613">i</span>f Map.mem acc key then <span data-count="2">a</span>cc
+      else <span data-count="1611">M</span>ap.set acc ~key ~data:(sampl<span data-count="1611">e</span> ()))
 </code></pre>
       </div>
     </div>

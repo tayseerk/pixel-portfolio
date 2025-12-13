@@ -165,12 +165,12 @@ let sexp_of_cents = sexp_of_t  (* emit cents to sexp *)
 let compare_cents = compare
 
 (* Conversions to/from ints *)
-let of_int_cents (c : int) : t = <span data-count="25">c</span>
-let to_int_cents (c : t) : int = <span data-count="3">c</span>
+let of_int_cents (c : int) : t = <span data-count="234">c</span>
+let to_int_cents (c : t) : int = <span data-count="208">c</span>
 
 (* Convert float dollars to cents (rounded nearest) *)
 let of_float_dollars (f : float) : t =
-  <span data-count="25">F</span>loat.(round_neares<span data-count="25">t</span> (f *. 100.0)) |&gt; Int.of_float
+  <span data-count="1682">F</span>loat.(round_neares<span data-count="1682">t</span> (f *. 100.0)) |&gt; Int.of_float
 
 (* Convert int dollars to cents *)
 let of_int_dollars (d : int) : t =
@@ -178,17 +178,17 @@ let of_int_dollars (d : int) : t =
 
 (* Convert cents to float dollars *)
 let to_float_dollars (c : t) : float =
-  <span data-count="22">F</span>loat.of_in<span data-count="22">t</span> c /. 100.0
+  <span data-count="2176">F</span>loat.of_in<span data-count="2176">t</span> c /. 100.0
 
 (* Basic arithmetic in cents *)
-let addition (x : t) (y : t) : t = <span data-count="19">x</span> + y
-let subtraction (x : t) (y : t) : t = <span data-count="6">x</span> - y
+let addition (x : t) (y : t) : t = <span data-count="214">x</span> + y
+let subtraction (x : t) (y : t) : t = <span data-count="111">x</span> - y
 
 let ( $+ ) = addition
 let ( $- ) = subtraction
 
 (* Multiply cents by an int quantity *)
-let multiply (amount : t) (d : int) : t = <span data-count="19">a</span>mount * d
+let multiply (amount : t) (d : int) : t = <span data-count="37">a</span>mount * d
 let ( $* ) = multiply
 
 (* Backward-compatible name used in tests / older code *)
@@ -199,8 +199,8 @@ let equal (x : t) (y : t) = <span data-count="1">I</span>nt.equal x y
 
 (* Pretty-print cents as dollars string. *)
 let make_it_look_nice (c : t) =
-  <span data-count="2">l</span>et sign, abs_val_c =
-    if c &lt; 0 then <span data-count="1">"</span>-", Int.ne<span data-count="1">g</span> c else <span data-count="1">"</span>", c
+  <span data-count="260">l</span>et sign, abs_val_c =
+    if c &lt; 0 then <span data-count="11">"</span>-", Int.ne<span data-count="11">g</span> c else <span data-count="249">"</span>", c
   in
   let dollars = abs_val_c / 100 in
   let cents = abs_val_c mod 100 in

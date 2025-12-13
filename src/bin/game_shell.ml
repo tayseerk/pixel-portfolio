@@ -87,7 +87,6 @@ let start_initial_engine () =
         Or_error.ok_exn (Runtime.new_game ~state:default_state_file ~mode)
   )
 
-(* REPL: takes a [run_cmd] function from main.ml *)
 let rec repl ~run_cmd =
   printf "> %!";
   match In_channel.input_line In_channel.stdin with
