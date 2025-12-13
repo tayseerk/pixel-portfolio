@@ -12,8 +12,8 @@
  (name pixel_portfolio)
  (synopsis "Pixel Portfolio stochastic market simulator")
  (description
-  "A functional stock-simulation engine featuring GBM and OU price dynamics,
-   CLI commands, and persistence hooks.")
+  "A functional stock-simulation engine featuring GBM and OU price dynamics
+   using CLI commands")
  (depends
   (core (>= 0.17.1))
   (cmdliner (>= 1.2.0))
